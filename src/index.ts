@@ -67,7 +67,8 @@ interface SwampyerOptions {
   realm: string;
   authid: string;
   authmethods: AuthMethod[]
-  onchallenge: (authMethod: AuthMethod) => string;
+  onchallenge?: (authMethod: AuthMethod) => string;
+  onopen?: () => void;
 }
 
 // TODO move this to a separate file
@@ -88,6 +89,7 @@ function deferredPromise<T>(): DeferredPromise<T> {
 class Swampyer {
   private socket: WebSocket;
   private deferredMessageTypePromises: Partial<Record<MessageTypes, DeferredPromise<unknown>[]>> = {};
+  private sessionId: number;
 
   constructor(private readonly options: SwampyerOptions) {
     this.setupConnection();
@@ -123,10 +125,6 @@ class Swampyer {
         callee: {},
       }
     }]);
-
-    const challenge = await this.getNextMessageOfType(MessageTypes.Challenge);
-    const authData = this.options.onchallenge?.(challenge[0]);
-    this.sendMessage(MessageTypes.Authenticate, [authData, {}]);
   }
 
   private sendMessage<T extends MessageTypes>(messageType: T, data: MessageData[T]) {
@@ -145,9 +143,21 @@ class Swampyer {
 
   private messageHandler(event: MessageEvent<string>) {
     const [messageType, ...data] = JSON.parse(event.data) as BaseMessage;
-    console.log('SOCKET MESSAGE', messageType, data);
 
     this.deferredMessageTypePromises[messageType]?.forEach(deferred => deferred.resolve(data));
     delete this.deferredMessageTypePromises[messageType];
+
+    switch (messageType) {
+      case MessageTypes.Challenge:
+        const [authMethod] = data as MessageData[MessageTypes.Challenge]
+        const authData = this.options.onchallenge?.(authMethod);
+        this.sendMessage(MessageTypes.Authenticate, [authData, {}]);
+        break;
+      case MessageTypes.Welcome:
+        const [sessionId] = data as MessageData[MessageTypes.Welcome];
+        this.sessionId = sessionId;
+        this.options.onopen?.();
+        break;
+    }
   }
 }
