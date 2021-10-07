@@ -40,8 +40,8 @@ interface MessageData {
   [MessageTypes.Hello]: [realm: string, details: Record<string, unknown> ];
   [MessageTypes.Welcome]: [sessionId: number, details: Record<string, unknown>];
   [MessageTypes.Abort]: unknown[];
-  [MessageTypes.Challenge]: [authMethod: string, extra: Record<string, unknown>];
-  [MessageTypes.Authenticate]: [signature: number, extra: Record<string, unknown>];
+  [MessageTypes.Challenge]: [authMethod: AuthMethod, extra: Record<string, unknown>];
+  [MessageTypes.Authenticate]: [signature: string, extra: Record<string, unknown>];
   [MessageTypes.Goodbye]: unknown[];
   [MessageTypes.Error]: unknown[];
   [MessageTypes.Publish]: unknown[];
@@ -67,6 +67,7 @@ interface SwampyerOptions {
   realm: string;
   authid: string;
   authmethods: AuthMethod[]
+  onchallenge: (authMethod: AuthMethod) => string;
 }
 
 // TODO move this to a separate file
@@ -124,7 +125,8 @@ class Swampyer {
     }]);
 
     const challenge = await this.getNextMessageOfType(MessageTypes.Challenge);
-    console.log('CHALLENGE', challenge);
+    const authData = this.options.onchallenge?.(challenge[0]);
+    this.sendMessage(MessageTypes.Authenticate, [authData, {}]);
   }
 
   private sendMessage<T extends MessageTypes>(messageType: T, data: MessageData[T]) {
@@ -143,6 +145,7 @@ class Swampyer {
 
   private messageHandler(event: MessageEvent<string>) {
     const [messageType, ...data] = JSON.parse(event.data) as BaseMessage;
+    console.log('SOCKET MESSAGE', messageType, data);
 
     this.deferredMessageTypePromises[messageType]?.forEach(deferred => deferred.resolve(data));
     delete this.deferredMessageTypePromises[messageType];
