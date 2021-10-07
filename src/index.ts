@@ -1,3 +1,5 @@
+type UnknownObject = Record<string | number | symbol, unknown>;
+
 enum AuthMethod {
   Cookie = 'cookie',
   Ticket = 'ticket',
@@ -51,8 +53,8 @@ interface MessageData {
   [MessageTypes.Unsubscribe]: unknown[];
   [MessageTypes.Unsubscribed]: unknown[];
   [MessageTypes.Event]: unknown[];
-  [MessageTypes.Call]: unknown[];
-  [MessageTypes.Result]: unknown[];
+  [MessageTypes.Call]: [requestId: number, options: UnknownObject, procedure: string, args: unknown[], kwargs: UnknownObject];
+  [MessageTypes.Result]: [requestId: number, details: UnknownObject, resultArray: unknown[], resultObj: UnknownObject];
   [MessageTypes.Register]: unknown[];
   [MessageTypes.Registered]: unknown[];
   [MessageTypes.Unregister]: unknown[];
@@ -90,6 +92,9 @@ class Swampyer {
   private socket: WebSocket;
   private deferredMessageTypePromises: Partial<Record<MessageTypes, DeferredPromise<unknown>[]>> = {};
   private sessionId: number;
+
+  private requestId = 1;
+  private deferredCallPromises: { [callId: string]: DeferredPromise<unknown> } = {};
 
   constructor(private readonly options: SwampyerOptions) {
     this.setupConnection();
@@ -149,7 +154,7 @@ class Swampyer {
 
     switch (messageType) {
       case MessageTypes.Challenge:
-        const [authMethod] = data as MessageData[MessageTypes.Challenge]
+        const [authMethod] = data as MessageData[MessageTypes.Challenge];
         const authData = this.options.onchallenge?.(authMethod);
         this.sendMessage(MessageTypes.Authenticate, [authData, {}]);
         break;
@@ -158,6 +163,21 @@ class Swampyer {
         this.sessionId = sessionId;
         this.options.onopen?.();
         break;
+      case MessageTypes.Result:
+        const [requestId, details, resultArray, resultObj ] = data as MessageData[MessageTypes.Result];
+        this.deferredCallPromises[requestId]?.resolve(resultArray[0]);
+        delete this.deferredCallPromises[requestId];
+        break;
     }
+  }
+
+  public async call(uri: string, args?: unknown[], kwargs?: UnknownObject): Promise<unknown> {
+    const currentRequestId = this.requestId;
+    this.requestId += 1;
+
+    const deferred = deferredPromise<unknown>();
+    this.sendMessage(MessageTypes.Call, [currentRequestId, {}, uri, args ?? [], kwargs ?? {}]);
+    this.deferredCallPromises[currentRequestId] = deferred;
+    return deferred.promise;
   }
 }
