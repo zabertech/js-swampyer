@@ -35,6 +35,33 @@ enum MessageTypes {
   Yield = 70,
 }
 
+type BaseMessage = [MessageTypes, ...unknown[]];
+interface MessageData {
+  [MessageTypes.Hello]: [realm: string, details: Record<string, unknown> ];
+  [MessageTypes.Welcome]: [sessionId: number, details: Record<string, unknown>];
+  [MessageTypes.Abort]: unknown[];
+  [MessageTypes.Challenge]: [authMethod: string, extra: Record<string, unknown>];
+  [MessageTypes.Authenticate]: [signature: number, extra: Record<string, unknown>];
+  [MessageTypes.Goodbye]: unknown[];
+  [MessageTypes.Error]: unknown[];
+  [MessageTypes.Publish]: unknown[];
+  [MessageTypes.Published]: unknown[];
+  [MessageTypes.Subscribe]: unknown[];
+  [MessageTypes.Subscribed]: unknown[];
+  [MessageTypes.Unsubscribe]: unknown[];
+  [MessageTypes.Unsubscribed]: unknown[];
+  [MessageTypes.Event]: unknown[];
+  [MessageTypes.Call]: unknown[];
+  [MessageTypes.Result]: unknown[];
+  [MessageTypes.Register]: unknown[];
+  [MessageTypes.Registered]: unknown[];
+  [MessageTypes.Unregister]: unknown[];
+  [MessageTypes.Unregistered]: unknown[];
+  [MessageTypes.Invocation]: unknown[];
+  [MessageTypes.Yield]: unknown[];
+  // TODO properly define the unknown[]
+}
+
 interface SwampyerOptions {
   url: string;
   realm: string;
@@ -42,11 +69,26 @@ interface SwampyerOptions {
   authmethods: AuthMethod[]
 }
 
+// TODO move this to a separate file
+interface DeferredPromise<T> {
+  resolve: (value: T) => void;
+  reject: (value: unknown) => void;
+  promise: Promise<T>;
+}
+function deferredPromise<T>(): DeferredPromise<T> {
+  const deferInstance: Partial<DeferredPromise<T>> = {};
+  deferInstance.promise = new Promise<T>((resolve, reject) => {
+    deferInstance.resolve = resolve;
+    deferInstance.reject = reject;
+  });
+  return deferInstance as DeferredPromise<T>;
+}
+
 class Swampyer {
   private socket: WebSocket;
+  private deferredMessageTypePromises: Partial<Record<MessageTypes, DeferredPromise<unknown>[]>> = {};
 
   constructor(private readonly options: SwampyerOptions) {
-    console.log('SWAMPYER CONSTRUCTOR');
     this.setupConnection();
   }
 
@@ -67,9 +109,9 @@ class Swampyer {
       })
     });
 
-    this.socket.addEventListener('message', this.messageHandler);
+    this.socket.addEventListener('message', this.messageHandler.bind(this));
 
-    this.socket.send(JSON.stringify([MessageTypes.Hello, this.options.realm, {
+    this.sendMessage(MessageTypes.Hello, [this.options.realm, {
       authid: this.options.authid,
       agent: 'swampyer-js',
       authmethods: this.options.authmethods || ['anonymous'],
@@ -79,12 +121,30 @@ class Swampyer {
         caller: {},
         callee: {},
       }
-    }]));
+    }]);
+
+    const challenge = await this.getNextMessageOfType(MessageTypes.Challenge);
+    console.log('CHALLENGE', challenge);
+  }
+
+  private sendMessage<T extends MessageTypes>(messageType: T, data: MessageData[T]) {
+    // TODO Make sure socket is open and ready for use
+    this.socket.send(JSON.stringify([messageType, ...data]));
+  }
+
+  private getNextMessageOfType<T extends MessageTypes>(messageType: T): Promise<MessageData[T]> {
+    const deferred = deferredPromise<MessageData[T]>();
+    if (!this.deferredMessageTypePromises[messageType]) {
+      this.deferredMessageTypePromises[messageType] = [];
+    }
+    this.deferredMessageTypePromises[messageType].push(deferred as DeferredPromise<unknown>);
+    return deferred.promise;
   }
 
   private messageHandler(event: MessageEvent<string>) {
-    console.log('SOCKET MESSAGE EVENT', event);
-    const data = JSON.parse(event.data);
-    console.log('SOCKET MESSAGE DATA', data);
+    const [messageType, ...data] = JSON.parse(event.data) as BaseMessage;
+
+    this.deferredMessageTypePromises[messageType]?.forEach(deferred => deferred.resolve(data));
+    delete this.deferredMessageTypePromises[messageType];
   }
 }
