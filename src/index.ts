@@ -197,6 +197,23 @@ class Swampyer {
         this.subscriptionHandlers[subscriptionId]?.(args, kwargs);
         break;
       }
+      case MessageTypes.Invocation: {
+        const [requestId, registrationId, details, args, kwargs] = data as MessageData[MessageTypes.Invocation];
+        try {
+          const handler = this.registrationHandlers[registrationId];
+          if (!handler) {
+            this.sendMessage(
+              MessageTypes.Error,
+              [MessageTypes.Invocation, requestId, {}, 'com.error.unavailable', ['No handler available for this request'], {}]
+            );
+          } else {
+            const result = handler(args, kwargs);
+            this.sendMessage(MessageTypes.Yield, [requestId, {}, [result], {}]);
+          }
+        } catch (e) {
+          this.sendMessage(MessageTypes.Error, [MessageTypes.Invocation, requestId, {}, '', [e], {}])
+        }
+      }
     }
   }
 
