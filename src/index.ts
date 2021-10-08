@@ -173,6 +173,10 @@ class Swampyer {
       case MessageTypes.Error: {
         const [requestMessageType, requestId, details, error, args, kwargs] = data as MessageData[MessageTypes.Error];
         switch(requestMessageType) {
+          case MessageTypes.Call:
+            this.deferredPromises.call[requestId]?.reject({ details, error, args, kwargs });
+            delete this.deferredPromises.call[requestId];
+            break;
           case MessageTypes.Subscribe:
             this.deferredPromises.subscribe[requestId]?.reject({ details, error, args, kwargs });
             delete this.deferredPromises.subscribe[requestId];
