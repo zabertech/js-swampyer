@@ -108,6 +108,8 @@ class Swampyer {
 
   private subscriptionHandlers: { [subscriptionId: number]: SubscriptionHandler } = {};
 
+  private onCloseCleanup: (() => void)[] = [];
+
   constructor(private readonly options: SwampyerOptions) {}
 
   async open() {
@@ -155,6 +157,8 @@ class Swampyer {
         }
       }
     });
+
+    this.onCloseCleanup.push(this.addEventListener('message', this.handleEvents.bind(this)));
 
     deferred.promise.catch(() => {}).finally(() => {
       openListenerCleanup();
