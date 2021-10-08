@@ -71,7 +71,6 @@ interface SwampyerOptions {
   authid: string;
   authmethods: AuthMethod[]
   onchallenge?: (authMethod: AuthMethod) => string;
-  onopen?: () => void;
 }
 
 type SubscriptionHandler = () => void;
@@ -102,47 +101,40 @@ class Swampyer {
   private sequentialRequestId = 1;
 
   private deferredPromises = {
-    getNextMessageOfType: {} as Partial<Record<MessageTypes, DeferredPromise<unknown>[]>>,
+    open: deferredPromise<void>(),
     call: {} as { [callId: string]: DeferredPromise<unknown> },
     subscribe: {} as { [requestId: number]: DeferredPromise<number> & { handler: SubscriptionHandler } },
   }
 
   private subscriptionHandlers: { [subscriptionId: number]: SubscriptionHandler } = {};
 
-  constructor(private readonly options: SwampyerOptions) {
-    this.setupConnection();
-  }
+  constructor(private readonly options: SwampyerOptions) {}
 
-  private async setupConnection() {
+  async open() {
     this.socket = new WebSocket(this.options.url, ['wamp.2.json']);
 
-    await new Promise<void>((resolve, reject) => {
-      // TODO cleanup these event listeners after we are done with them
+    this.socket.addEventListener('open', () => {
+      this.sendMessage(MessageTypes.Hello, [this.options.realm, {
+        authid: this.options.authid,
+        agent: 'swampyer-js',
+        authmethods: this.options.authmethods || ['anonymous'],
+        roles: {
+          subscriber: {},
+          publisher: {},
+          caller: {},
+          callee: {},
+        }
+      }]);
+    });
 
-      this.socket.addEventListener('open', e => {
-        console.log('SOCKET OPEN', e);
-        resolve();
-      });
-
-      this.socket.addEventListener('error', e => {
-        console.log('SOCKET ERROR', e);
-        reject();
-      })
+    this.socket.addEventListener('error', () => {
+      // TODO create the error object properly
+      this.deferredPromises.open.reject(new Error('An error ocurred while opening the WebSocket connection'));
     });
 
     this.socket.addEventListener('message', this.messageHandler.bind(this));
 
-    this.sendMessage(MessageTypes.Hello, [this.options.realm, {
-      authid: this.options.authid,
-      agent: 'swampyer-js',
-      authmethods: this.options.authmethods || ['anonymous'],
-      roles: {
-        subscriber: {},
-        publisher: {},
-        caller: {},
-        callee: {},
-      }
-    }]);
+    return this.deferredPromises.open.promise;
   }
 
   private sendMessage<T extends MessageTypes>(messageType: T, data: MessageData[T]) {
@@ -150,21 +142,8 @@ class Swampyer {
     this.socket.send(JSON.stringify([messageType, ...data]));
   }
 
-  private getNextMessageOfType<T extends MessageTypes>(messageType: T): Promise<MessageData[T]> {
-    const deferred = deferredPromise<MessageData[T]>();
-    if (!this.deferredPromises.getNextMessageOfType[messageType]) {
-      this.deferredPromises.getNextMessageOfType[messageType] = [];
-    }
-    this.deferredPromises.getNextMessageOfType[messageType].push(deferred as DeferredPromise<unknown>);
-    return deferred.promise;
-  }
-
   private messageHandler(event: MessageEvent<string>) {
     const [messageType, ...data] = JSON.parse(event.data) as BaseMessage;
-
-    this.deferredPromises.getNextMessageOfType[messageType]?.forEach(deferred => deferred.resolve(data));
-    delete this.deferredPromises.getNextMessageOfType[messageType];
-
     switch (messageType) {
       case MessageTypes.Challenge: {
         const [authMethod] = data as MessageData[MessageTypes.Challenge];
@@ -175,7 +154,7 @@ class Swampyer {
       case MessageTypes.Welcome: {
         const [sessionId] = data as MessageData[MessageTypes.Welcome];
         this.sessionId = sessionId;
-        this.options.onopen?.();
+        this.deferredPromises.open.resolve();
         break;
       }
       case MessageTypes.Result: {
