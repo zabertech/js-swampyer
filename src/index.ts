@@ -90,11 +90,14 @@ function deferredPromise<T>(): DeferredPromise<T> {
 
 class Swampyer {
   private socket: WebSocket;
-  private deferredMessageTypePromises: Partial<Record<MessageTypes, DeferredPromise<unknown>[]>> = {};
   private sessionId: number;
 
-  private requestId = 1;
-  private deferredCallPromises: { [callId: string]: DeferredPromise<unknown> } = {};
+  private sequentialRequestId = 1;
+
+  private deferredPromises = {
+    getNextMessageOfType: {} as Partial<Record<MessageTypes, DeferredPromise<unknown>[]>>,
+    call: {} as { [callId: string]: DeferredPromise<unknown> },
+  }
 
   constructor(private readonly options: SwampyerOptions) {
     this.setupConnection();
@@ -139,18 +142,18 @@ class Swampyer {
 
   private getNextMessageOfType<T extends MessageTypes>(messageType: T): Promise<MessageData[T]> {
     const deferred = deferredPromise<MessageData[T]>();
-    if (!this.deferredMessageTypePromises[messageType]) {
-      this.deferredMessageTypePromises[messageType] = [];
+    if (!this.deferredPromises.getNextMessageOfType[messageType]) {
+      this.deferredPromises.getNextMessageOfType[messageType] = [];
     }
-    this.deferredMessageTypePromises[messageType].push(deferred as DeferredPromise<unknown>);
+    this.deferredPromises.getNextMessageOfType[messageType].push(deferred as DeferredPromise<unknown>);
     return deferred.promise;
   }
 
   private messageHandler(event: MessageEvent<string>) {
     const [messageType, ...data] = JSON.parse(event.data) as BaseMessage;
 
-    this.deferredMessageTypePromises[messageType]?.forEach(deferred => deferred.resolve(data));
-    delete this.deferredMessageTypePromises[messageType];
+    this.deferredPromises.getNextMessageOfType[messageType]?.forEach(deferred => deferred.resolve(data));
+    delete this.deferredPromises.getNextMessageOfType[messageType];
 
     switch (messageType) {
       case MessageTypes.Challenge:
@@ -165,19 +168,19 @@ class Swampyer {
         break;
       case MessageTypes.Result:
         const [requestId, details, resultArray, resultObj ] = data as MessageData[MessageTypes.Result];
-        this.deferredCallPromises[requestId]?.resolve(resultArray[0]);
-        delete this.deferredCallPromises[requestId];
+        this.deferredPromises.call[requestId]?.resolve(resultArray[0]);
+        delete this.deferredPromises.call[requestId];
         break;
     }
   }
 
   public async call(uri: string, args?: unknown[], kwargs?: UnknownObject): Promise<unknown> {
-    const currentRequestId = this.requestId;
-    this.requestId += 1;
+    const currentRequestId = this.sequentialRequestId;
+    this.sequentialRequestId += 1;
 
     const deferred = deferredPromise<unknown>();
     this.sendMessage(MessageTypes.Call, [currentRequestId, {}, uri, args ?? [], kwargs ?? {}]);
-    this.deferredCallPromises[currentRequestId] = deferred;
+    this.deferredPromises.call[currentRequestId] = deferred;
     return deferred.promise;
   }
 }
