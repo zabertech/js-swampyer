@@ -100,16 +100,11 @@ function generateRandomInt() {
 }
 
 class Swampyer {
-  private socket: WebSocket;
-  private sessionId: number;
+  private socket: WebSocket | undefined;
+  private sessionId: number | undefined;
 
   private callRequestId = 1;
   private publishRequestId = 1;
-
-  private deferredPromises = {
-    unsubscribe: {} as { [requestId: number]: DeferredPromise<void> },
-    publish: {} as { [requestId: number]: DeferredPromise<void> },
-  }
 
   private subscriptionHandlers: { [subscriptionId: number]: SubscriptionHandler } = {};
 
@@ -154,7 +149,7 @@ class Swampyer {
         }
         case MessageTypes.Challenge: {
           const [authMethod] = data as MessageData[MessageTypes.Challenge];
-          const authData = this.options.onchallenge?.(authMethod);
+          const authData = this.options.onchallenge?.(authMethod) ?? '';
           this.sendMessage(MessageTypes.Authenticate, [authData, {}]);
           break;
         }
@@ -172,16 +167,22 @@ class Swampyer {
 
   private addEventListener<K extends keyof WebSocketEventMap>(type: K, listener: (this: WebSocket, ev: WebSocketEventMap[K]) => any) {
     // TODO Make sure socket is open and ready for use
+    if (!this.socket || !this.sessionId) {
+      throw Error('Socket is not ready')
+    }
     this.socket.addEventListener(type, listener);
-    return () => this.socket.removeEventListener(type, listener);
+    return () => this.socket?.removeEventListener(type, listener);
   }
 
   private sendMessage<T extends MessageTypes>(messageType: T, data: MessageData[T]) {
     // TODO Make sure socket is open and ready for use
+    if (!this.socket || !this.sessionId) {
+      throw Error('Socket is not ready')
+    }
     this.socket.send(JSON.stringify([messageType, ...data]));
   }
 
-  private messageHandler(event: MessageEvent<string>) {
+  private handleEvents(event: MessageEvent<string>) {
     const [messageType, ...data] = JSON.parse(event.data) as BaseMessage;
     switch (messageType) {
       case MessageTypes.Event: {
@@ -271,13 +272,13 @@ class Swampyer {
     return deferred.promise;
   }
 
-  async publish(uri: string, args: unknown[] = [], kwargs: UnknownObject = {}, options: PublishOptions = {}): Promise<void> | null {
+  async publish(uri: string, args: unknown[] = [], kwargs: UnknownObject = {}, options: PublishOptions = {}): Promise<void> {
     const requestId = this.publishRequestId;
     this.publishRequestId += 1;
 
     this.sendMessage(MessageTypes.Publish, [requestId, options, uri, args, kwargs]);
     if (!options.acknowledge) {
-      return null;
+      return;
     }
 
     const deferred = deferredPromise<void>();

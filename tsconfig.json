@@ -9,7 +9,6 @@
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "declaration": true,
-    "strictNullChecks": false,
     "paths": {
       "native": ["native"]
     }
