@@ -48,7 +48,7 @@ interface MessageData {
     requestMessageType: MessageTypes, requestId: number, details: UnknownObject, error: string,
     args: unknown[], kwargs: UnknownObject
   ];
-  [MessageTypes.Publish]: [requestId: number, options: UnknownObject, topic: string, args: unknown[], kwargs: UnknownObject];
+  [MessageTypes.Publish]: [requestId: number, options: PublishOptions, topic: string, args: unknown[], kwargs: UnknownObject];
   [MessageTypes.Published]: [requestId: number, publicationId: number];
   [MessageTypes.Subscribe]: [requestId: number, options: UnknownObject, topic: string];
   [MessageTypes.Subscribed]: [requestId: number, subscriptionId: number];
@@ -76,6 +76,10 @@ interface SwampyerOptions {
 
 type SubscriptionHandler = (args: unknown[], kwargs: UnknownObject) => void;
 
+interface PublishOptions {
+  acknowledge?: boolean;
+}
+
 // TODO implement timeout for these deferred promises
 interface DeferredPromise<T> {
   resolve: (value: T) => void;
@@ -100,7 +104,7 @@ class Swampyer {
   private sessionId: number;
 
   private callRequestId = 1;
-  private publisRequestId = 1;
+  private publishRequestId = 1;
 
   private deferredPromises = {
     unsubscribe: {} as { [requestId: number]: DeferredPromise<void> },
@@ -185,23 +189,6 @@ class Swampyer {
         this.subscriptionHandlers[subscriptionId]?.(args, kwargs);
         break;
       }
-      case MessageTypes.Published: {
-        const [requestId] = data as MessageData[MessageTypes.Published];
-        this.deferredPromises.publish[requestId]?.resolve();
-        delete this.deferredPromises.publish[requestId];
-        break;
-      }
-      case MessageTypes.Error: {
-        const [requestMessageType, requestId, details, error, args, kwargs] = data as MessageData[MessageTypes.Error];
-        switch(requestMessageType) {
-          case MessageTypes.Publish: {
-            this.deferredPromises.publish[requestId]?.reject({ details, error, args, kwargs });
-            delete this.deferredPromises.publish[requestId];
-            break;
-          }
-        }
-        break;
-      }
     }
   }
 
@@ -284,17 +271,33 @@ class Swampyer {
     return deferred.promise;
   }
 
-  // TODO get options object as argument with `acknowledge` in it
-  async publish(uri: string, args: unknown[] = [], kwargs: UnknownObject = {}): Promise<void> {
-    const requestId = this.callRequestId;
-    this.callRequestId += 1;
+  async publish(uri: string, args: unknown[] = [], kwargs: UnknownObject = {}, options: PublishOptions = {}): Promise<void> | null {
+    const requestId = this.publishRequestId;
+    this.publishRequestId += 1;
 
-    // TODO do not bother with deferred promises if `options.acknowledge` is not true
-    const deferrd = deferredPromise<void>();
-    this.deferredPromises.publish[requestId] = deferrd;
-    // TODO do not enforce `acknowledge`
-    this.sendMessage(MessageTypes.Publish, [requestId, { acknowledge: true }, uri, args, kwargs]);
+    this.sendMessage(MessageTypes.Publish, [requestId, options, uri, args, kwargs]);
+    if (!options.acknowledge) {
+      return null;
+    }
 
-    return deferrd.promise;
+    const deferred = deferredPromise<void>();
+
+    const messageListenerCleanup = this.addEventListener('message', event => {
+      const [messageType, ...data] = JSON.parse(event.data) as BaseMessage;
+
+      if (messageType === MessageTypes.Published && data[0] === requestId) {
+        deferred.resolve();
+        return;
+      }
+
+      if (messageType === MessageTypes.Error && data[0] === MessageTypes.Publish && data[1] === requestId) {
+        const [ , , details, error, args, kwargs] = data as MessageData[MessageTypes.Error];
+        deferred.reject({ details, error, args, kwargs });
+        return;
+      }
+    });
+
+    deferred.promise.catch(() => {}).finally(messageListenerCleanup);
+    return deferred.promise;
   }
 }
