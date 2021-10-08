@@ -103,7 +103,6 @@ class Swampyer {
   private publisRequestId = 1;
 
   private deferredPromises = {
-    subscribe: {} as { [requestId: number]: DeferredPromise<number> & { handler: SubscriptionHandler } },
     unsubscribe: {} as { [requestId: number]: DeferredPromise<void> },
     publish: {} as { [requestId: number]: DeferredPromise<void> },
   }
@@ -181,13 +180,6 @@ class Swampyer {
   private messageHandler(event: MessageEvent<string>) {
     const [messageType, ...data] = JSON.parse(event.data) as BaseMessage;
     switch (messageType) {
-      case MessageTypes.Subscribed: {
-        const [requestId, subscriptionId] = data as MessageData[MessageTypes.Subscribed];
-        this.subscriptionHandlers[subscriptionId] = this.deferredPromises.subscribe[requestId].handler;
-        this.deferredPromises.subscribe[requestId]?.resolve(subscriptionId);
-        delete this.deferredPromises.subscribe[requestId];
-        break;
-      }
       case MessageTypes.Event: {
         const [subscriptionId, publishId, details, args, kwargs] = data as MessageData[MessageTypes.Event];
         this.subscriptionHandlers[subscriptionId]?.(args, kwargs);
@@ -208,10 +200,6 @@ class Swampyer {
       case MessageTypes.Error: {
         const [requestMessageType, requestId, details, error, args, kwargs] = data as MessageData[MessageTypes.Error];
         switch(requestMessageType) {
-          case MessageTypes.Subscribe:
-            this.deferredPromises.subscribe[requestId]?.reject({ details, error, args, kwargs });
-            delete this.deferredPromises.subscribe[requestId];
-            break;
           case MessageTypes.Unsubscribe: {
             this.deferredPromises.unsubscribe[requestId]?.reject({ details, error, args, kwargs });
             delete this.deferredPromises.unsubscribe[requestId];
@@ -258,11 +246,27 @@ class Swampyer {
   async subscribe(uri: string, handler: SubscriptionHandler): Promise<number> {
     const requestId = generateRandomInt();
     const deferred = deferredPromise<number>();
-    this.deferredPromises.subscribe[requestId] = {
-      ...deferred,
-      handler
-    };
+
     this.sendMessage(MessageTypes.Subscribe, [requestId, {}, uri]);
+
+    const messageListenerCleanup = this.addEventListener('message', event => {
+      const [messageType, ...data] = JSON.parse(event.data) as BaseMessage;
+
+      if (messageType === MessageTypes.Subscribed && data[0] === requestId) {
+        const [ , subscriptionId] = data as MessageData[MessageTypes.Subscribed];
+        this.subscriptionHandlers[subscriptionId] = handler;
+        deferred.resolve(subscriptionId);
+        return;
+      }
+
+      if (messageType === MessageTypes.Error && data[0] === MessageTypes.Subscribe && data[1] === requestId) {
+        const [ , , details, error, args, kwargs] = data as MessageData[MessageTypes.Error];
+        deferred.reject({ details, error, args, kwargs });
+        return;
+      }
+    });
+
+    deferred.promise.catch(() => {}).finally(messageListenerCleanup);
     return deferred.promise;
   }
 
