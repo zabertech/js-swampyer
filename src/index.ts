@@ -54,8 +54,8 @@ interface MessageData {
   [MessageTypes.Published]: unknown[];
   [MessageTypes.Subscribe]: [requestId: number, options: UnknownObject, topic: string];
   [MessageTypes.Subscribed]: [requestId: number, subscriptionId: number];
-  [MessageTypes.Unsubscribe]: unknown[];
-  [MessageTypes.Unsubscribed]: unknown[];
+  [MessageTypes.Unsubscribe]: [requestId: number, subscriptionId: number];
+  [MessageTypes.Unsubscribed]: [requestId: number];
   [MessageTypes.Event]: [subscriptionId: number, publishId: number, details: UnknownObject, args: unknown[], kwargs: UnknownObject];
   [MessageTypes.Call]: [requestId: number, options: UnknownObject, procedure: string, args: unknown[], kwargs: UnknownObject];
   [MessageTypes.Result]: [requestId: number, details: UnknownObject, resultArray: unknown[], resultObj: UnknownObject];
@@ -107,6 +107,7 @@ class Swampyer {
     open: deferredPromise<void>(),
     call: {} as { [callId: string]: DeferredPromise<unknown> },
     subscribe: {} as { [requestId: number]: DeferredPromise<number> & { handler: SubscriptionHandler } },
+    unsubscribe: {} as { [requestId: number]: DeferredPromise<void> },
   }
 
   private subscriptionHandlers: { [subscriptionId: number]: SubscriptionHandler } = {};
@@ -178,6 +179,12 @@ class Swampyer {
         this.subscriptionHandlers[subscriptionId]?.(args, kwargs);
         break;
       }
+      case MessageTypes.Unsubscribed: {
+        const [requestId] = data as MessageData[MessageTypes.Unsubscribed];
+        this.deferredPromises.unsubscribe[requestId]?.resolve();
+        delete this.deferredPromises.unsubscribe[requestId];
+        break;
+      }
       case MessageTypes.Error: {
         const [requestMessageType, requestId, details, error, args, kwargs] = data as MessageData[MessageTypes.Error];
         switch(requestMessageType) {
@@ -189,6 +196,11 @@ class Swampyer {
             this.deferredPromises.subscribe[requestId]?.reject({ details, error, args, kwargs });
             delete this.deferredPromises.subscribe[requestId];
             break;
+          case MessageTypes.Unsubscribe: {
+            this.deferredPromises.unsubscribe[requestId]?.reject({ details, error, args, kwargs });
+            delete this.deferredPromises.unsubscribe[requestId];
+            break;
+          }
         }
         break;
       }
@@ -200,8 +212,8 @@ class Swampyer {
     this.sequentialRequestId += 1;
 
     const deferred = deferredPromise<unknown>();
-    this.sendMessage(MessageTypes.Call, [currentRequestId, {}, uri, args ?? [], kwargs ?? {}]);
     this.deferredPromises.call[currentRequestId] = deferred;
+    this.sendMessage(MessageTypes.Call, [currentRequestId, {}, uri, args ?? [], kwargs ?? {}]);
     return deferred.promise;
   }
 
@@ -214,5 +226,13 @@ class Swampyer {
     };
     this.sendMessage(MessageTypes.Subscribe, [requestId, {}, uri]);
     return deferred.promise;
+  }
+
+  async unsubscribe(subscriptionId: number): Promise<void> {
+    const requestId = generateRandomInt();
+    const deferrd = deferredPromise<void>();
+    this.deferredPromises.unsubscribe[requestId] = deferrd;
+    this.sendMessage(MessageTypes.Unsubscribe, [requestId, subscriptionId]);
+    return deferrd.promise;
   }
 }
