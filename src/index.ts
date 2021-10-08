@@ -23,7 +23,6 @@ enum MessageTypes {
   Subscribed = 33,
   Unsubscribe = 34,
   Unsubscribed = 35,
-
   Event = 36,
 
   Call = 48,
@@ -33,7 +32,6 @@ enum MessageTypes {
   Registered = 65,
   Unregister = 66,
   Unregistered = 67,
-
   Invocation = 68,
   Yield = 70,
 }
@@ -50,8 +48,8 @@ interface MessageData {
     requestMessageType: MessageTypes, requestId: number, details: UnknownObject, error: string,
     args: unknown[], kwargs: UnknownObject
   ];
-  [MessageTypes.Publish]: unknown[];
-  [MessageTypes.Published]: unknown[];
+  [MessageTypes.Publish]: [requestId: number, options: UnknownObject, topic: string, args: unknown[], kwargs: UnknownObject];
+  [MessageTypes.Published]: [requestId: number, publicationId: number];
   [MessageTypes.Subscribe]: [requestId: number, options: UnknownObject, topic: string];
   [MessageTypes.Subscribed]: [requestId: number, subscriptionId: number];
   [MessageTypes.Unsubscribe]: [requestId: number, subscriptionId: number];
@@ -101,13 +99,15 @@ class Swampyer {
   private socket: WebSocket;
   private sessionId: number;
 
-  private sequentialRequestId = 1;
+  private callRequestId = 1;
+  private publisRequestId = 1;
 
   private deferredPromises = {
     open: deferredPromise<void>(),
     call: {} as { [callId: string]: DeferredPromise<unknown> },
     subscribe: {} as { [requestId: number]: DeferredPromise<number> & { handler: SubscriptionHandler } },
     unsubscribe: {} as { [requestId: number]: DeferredPromise<void> },
+    publish: {} as { [requestId: number]: DeferredPromise<void> },
   }
 
   private subscriptionHandlers: { [subscriptionId: number]: SubscriptionHandler } = {};
@@ -190,6 +190,12 @@ class Swampyer {
         delete this.deferredPromises.unsubscribe[requestId];
         break;
       }
+      case MessageTypes.Published: {
+        const [requestId] = data as MessageData[MessageTypes.Published];
+        this.deferredPromises.publish[requestId]?.resolve();
+        delete this.deferredPromises.publish[requestId];
+        break;
+      }
       case MessageTypes.Error: {
         const [requestMessageType, requestId, details, error, args, kwargs] = data as MessageData[MessageTypes.Error];
         switch(requestMessageType) {
@@ -206,19 +212,24 @@ class Swampyer {
             delete this.deferredPromises.unsubscribe[requestId];
             break;
           }
+          case MessageTypes.Publish: {
+            this.deferredPromises.publish[requestId]?.reject({ details, error, args, kwargs });
+            delete this.deferredPromises.publish[requestId];
+            break;
+          }
         }
         break;
       }
     }
   }
 
-  async call(uri: string, args?: unknown[], kwargs?: UnknownObject): Promise<unknown> {
-    const currentRequestId = this.sequentialRequestId;
-    this.sequentialRequestId += 1;
+  async call(uri: string, args: unknown[] = [], kwargs: UnknownObject = {}): Promise<unknown> {
+    const requestId = this.callRequestId;
+    this.callRequestId += 1;
 
     const deferred = deferredPromise<unknown>();
-    this.deferredPromises.call[currentRequestId] = deferred;
-    this.sendMessage(MessageTypes.Call, [currentRequestId, {}, uri, args ?? [], kwargs ?? {}]);
+    this.deferredPromises.call[requestId] = deferred;
+    this.sendMessage(MessageTypes.Call, [requestId, {}, uri, args, kwargs]);
     return deferred.promise;
   }
 
@@ -238,6 +249,20 @@ class Swampyer {
     const deferrd = deferredPromise<void>();
     this.deferredPromises.unsubscribe[requestId] = deferrd;
     this.sendMessage(MessageTypes.Unsubscribe, [requestId, subscriptionId]);
+    return deferrd.promise;
+  }
+
+  // TODO get options object as argument with `acknowledge` in it
+  async publish(uri: string, args: unknown[] = [], kwargs: UnknownObject = {}): Promise<void> {
+    const requestId = this.callRequestId;
+    this.callRequestId += 1;
+
+    // TODO do not bother with deferred promises if `options.acknowledge` is not true
+    const deferrd = deferredPromise<void>();
+    this.deferredPromises.publish[requestId] = deferrd;
+    // TODO do not enforce `acknowledge`
+    this.sendMessage(MessageTypes.Publish, [requestId, { acknowledge: true }, uri, args, kwargs]);
+
     return deferrd.promise;
   }
 }
