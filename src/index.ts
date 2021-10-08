@@ -46,14 +46,17 @@ interface MessageData {
   [MessageTypes.Challenge]: [authMethod: AuthMethod, extra: Record<string, unknown>];
   [MessageTypes.Authenticate]: [signature: string, extra: Record<string, unknown>];
   [MessageTypes.Goodbye]: unknown[];
-  [MessageTypes.Error]: [requestMessageType: MessageTypes, requestId: number, details: UnknownObject, error: string, args: unknown[], kwargs: UnknownObject];
+  [MessageTypes.Error]: [
+    requestMessageType: MessageTypes, requestId: number, details: UnknownObject, error: string,
+    args: unknown[], kwargs: UnknownObject
+  ];
   [MessageTypes.Publish]: unknown[];
   [MessageTypes.Published]: unknown[];
   [MessageTypes.Subscribe]: [requestId: number, options: UnknownObject, topic: string];
   [MessageTypes.Subscribed]: [requestId: number, subscriptionId: number];
   [MessageTypes.Unsubscribe]: unknown[];
   [MessageTypes.Unsubscribed]: unknown[];
-  [MessageTypes.Event]: unknown[];
+  [MessageTypes.Event]: [subscriptionId: number, publishId: number, details: UnknownObject, args: unknown[], kwargs: UnknownObject];
   [MessageTypes.Call]: [requestId: number, options: UnknownObject, procedure: string, args: unknown[], kwargs: UnknownObject];
   [MessageTypes.Result]: [requestId: number, details: UnknownObject, resultArray: unknown[], resultObj: UnknownObject];
   [MessageTypes.Register]: unknown[];
@@ -73,7 +76,7 @@ interface SwampyerOptions {
   onchallenge?: (authMethod: AuthMethod) => string;
 }
 
-type SubscriptionHandler = () => void;
+type SubscriptionHandler = (args: unknown[], kwargs: UnknownObject) => void;
 
 // TODO implement timeout for these deferred promises
 interface DeferredPromise<T> {
@@ -168,6 +171,11 @@ class Swampyer {
         this.subscriptionHandlers[subscriptionId] = this.deferredPromises.subscribe[requestId].handler;
         this.deferredPromises.subscribe[requestId]?.resolve(subscriptionId);
         delete this.deferredPromises.subscribe[requestId];
+        break;
+      }
+      case MessageTypes.Event: {
+        const [subscriptionId, publishId, details, args, kwargs] = data as MessageData[MessageTypes.Event];
+        this.subscriptionHandlers[subscriptionId]?.(args, kwargs);
         break;
       }
       case MessageTypes.Error: {
