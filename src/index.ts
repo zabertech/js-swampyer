@@ -103,7 +103,6 @@ class Swampyer {
   private publisRequestId = 1;
 
   private deferredPromises = {
-    call: {} as { [callId: string]: DeferredPromise<unknown> },
     subscribe: {} as { [requestId: number]: DeferredPromise<number> & { handler: SubscriptionHandler } },
     unsubscribe: {} as { [requestId: number]: DeferredPromise<void> },
     publish: {} as { [requestId: number]: DeferredPromise<void> },
@@ -159,7 +158,7 @@ class Swampyer {
       }
     });
 
-    deferred.promise.finally(() => {
+    deferred.promise.catch(() => {}).finally(() => {
       openListenerCleanup();
       errorListenerCleanup();
       messageListenerCleanup();
@@ -182,12 +181,6 @@ class Swampyer {
   private messageHandler(event: MessageEvent<string>) {
     const [messageType, ...data] = JSON.parse(event.data) as BaseMessage;
     switch (messageType) {
-      case MessageTypes.Result: {
-        const [requestId, details, resultArray, resultObj ] = data as MessageData[MessageTypes.Result];
-        this.deferredPromises.call[requestId]?.resolve(resultArray[0]);
-        delete this.deferredPromises.call[requestId];
-        break;
-      }
       case MessageTypes.Subscribed: {
         const [requestId, subscriptionId] = data as MessageData[MessageTypes.Subscribed];
         this.subscriptionHandlers[subscriptionId] = this.deferredPromises.subscribe[requestId].handler;
@@ -215,10 +208,6 @@ class Swampyer {
       case MessageTypes.Error: {
         const [requestMessageType, requestId, details, error, args, kwargs] = data as MessageData[MessageTypes.Error];
         switch(requestMessageType) {
-          case MessageTypes.Call:
-            this.deferredPromises.call[requestId]?.reject({ details, error, args, kwargs });
-            delete this.deferredPromises.call[requestId];
-            break;
           case MessageTypes.Subscribe:
             this.deferredPromises.subscribe[requestId]?.reject({ details, error, args, kwargs });
             delete this.deferredPromises.subscribe[requestId];
@@ -244,8 +233,25 @@ class Swampyer {
     this.callRequestId += 1;
 
     const deferred = deferredPromise<unknown>();
-    this.deferredPromises.call[requestId] = deferred;
     this.sendMessage(MessageTypes.Call, [requestId, {}, uri, args, kwargs]);
+
+    const messageListenerCleanup = this.addEventListener('message', event => {
+      const [messageType, ...data] = JSON.parse(event.data) as BaseMessage;
+
+      if (messageType === MessageTypes.Result && data[0] === requestId) {
+        const [ , , resultArray ] = data as MessageData[MessageTypes.Result];
+        deferred.resolve(resultArray[0]);
+        return;
+      }
+
+      if (messageType === MessageTypes.Error && data[0] === MessageTypes.Call && data[1] === requestId) {
+        const [ , , details, error, args, kwargs] = data as MessageData[MessageTypes.Error];
+        deferred.reject({ details, error, args, kwargs });
+        return;
+      }
+    });
+
+    deferred.promise.catch(() => {}).finally(messageListenerCleanup);
     return deferred.promise;
   }
 
