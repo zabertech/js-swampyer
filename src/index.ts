@@ -57,13 +57,13 @@ interface MessageData {
   [MessageTypes.Event]: [subscriptionId: number, publishId: number, details: UnknownObject, args: unknown[], kwargs: UnknownObject];
   [MessageTypes.Call]: [requestId: number, options: UnknownObject, procedure: string, args: unknown[], kwargs: UnknownObject];
   [MessageTypes.Result]: [requestId: number, details: UnknownObject, resultArray: unknown[], resultObj: UnknownObject];
-  [MessageTypes.Register]: unknown[];
-  [MessageTypes.Registered]: unknown[];
-  [MessageTypes.Unregister]: unknown[];
-  [MessageTypes.Unregistered]: unknown[];
-  [MessageTypes.Invocation]: unknown[];
-  [MessageTypes.Yield]: unknown[];
-  // TODO properly define the unknown[]
+  [MessageTypes.Register]: [requestId: number, details: UnknownObject, procedure: string];
+  [MessageTypes.Registered]: [requestId: number, registrationId: number];
+  [MessageTypes.Unregister]: [requestId: number, registrationId: number];
+  [MessageTypes.Unregistered]: [requestId: number];
+  [MessageTypes.Invocation]: [requestId: number, registrationId: number, details: UnknownObject, args: unknown[], kwargs: UnknownObject];
+  [MessageTypes.Yield]: [requestId: number, options: UnknownObject, args: unknown[], kwargs: UnknownObject];
+  // TODO properly define the unknown[] types
 }
 
 interface SwampyerOptions {
@@ -75,6 +75,7 @@ interface SwampyerOptions {
 }
 
 type SubscriptionHandler = (args: unknown[], kwargs: UnknownObject) => void;
+type RegistrationHandler = (args: unknown[], kwargs: UnknownObject) => void;
 
 interface PublishOptions {
   acknowledge?: boolean;
@@ -105,8 +106,10 @@ class Swampyer {
 
   private callRequestId = 1;
   private publishRequestId = 1;
+  private registrationRequestId = 1;
 
   private subscriptionHandlers: { [subscriptionId: number]: SubscriptionHandler } = {};
+  private registrationHandlers: { [registrationId: number]: RegistrationHandler } = {};
 
   private onCloseCleanup: (() => void)[] = [];
 
@@ -171,8 +174,8 @@ class Swampyer {
 
   private addEventListener<K extends keyof WebSocketEventMap>(type: K, listener: (this: WebSocket, ev: WebSocketEventMap[K]) => any) {
     // TODO Make sure socket is open and ready for use
-    if (!this.socket || !this.sessionId) {
-      throw Error('Socket is not ready')
+    if (!this.socket) {
+      throw Error('Socket has not been opened yet')
     }
     this.socket.addEventListener(type, listener);
     return () => this.socket?.removeEventListener(type, listener);
@@ -180,8 +183,8 @@ class Swampyer {
 
   private sendMessage<T extends MessageTypes>(messageType: T, data: MessageData[T]) {
     // TODO Make sure socket is open and ready for use
-    if (!this.socket || !this.sessionId) {
-      throw Error('Socket is not ready')
+    if (!this.socket) {
+      throw Error('Socket has not been opened yet')
     }
     this.socket.send(JSON.stringify([messageType, ...data]));
   }
@@ -296,6 +299,34 @@ class Swampyer {
       }
 
       if (messageType === MessageTypes.Error && data[0] === MessageTypes.Publish && data[1] === requestId) {
+        const [ , , details, error, args, kwargs] = data as MessageData[MessageTypes.Error];
+        deferred.reject({ details, error, args, kwargs });
+        return;
+      }
+    });
+
+    deferred.promise.catch(() => {}).finally(messageListenerCleanup);
+    return deferred.promise;
+  }
+
+  async register(uri: string, handler: RegistrationHandler): Promise<number> {
+    const requestId = this.registrationRequestId;
+    this.registrationRequestId += 1;
+
+    const deferred = deferredPromise<number>();
+    this.sendMessage(MessageTypes.Register, [requestId, {}, uri]);
+
+    const messageListenerCleanup = this.addEventListener('message', event => {
+      const [messageType, ...data] = JSON.parse(event.data) as BaseMessage;
+
+      if (messageType === MessageTypes.Registered && data[0] === requestId) {
+        const [ , registrationId] = data as MessageData[MessageTypes.Registered];
+        this.registrationHandlers[registrationId] = handler;
+        deferred.resolve(registrationId);
+        return;
+      }
+
+      if (messageType === MessageTypes.Error && data[0] === MessageTypes.Register && data[1] === requestId) {
         const [ , , details, error, args, kwargs] = data as MessageData[MessageTypes.Error];
         deferred.reject({ details, error, args, kwargs });
         return;
