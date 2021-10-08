@@ -185,12 +185,6 @@ class Swampyer {
         this.subscriptionHandlers[subscriptionId]?.(args, kwargs);
         break;
       }
-      case MessageTypes.Unsubscribed: {
-        const [requestId] = data as MessageData[MessageTypes.Unsubscribed];
-        this.deferredPromises.unsubscribe[requestId]?.resolve();
-        delete this.deferredPromises.unsubscribe[requestId];
-        break;
-      }
       case MessageTypes.Published: {
         const [requestId] = data as MessageData[MessageTypes.Published];
         this.deferredPromises.publish[requestId]?.resolve();
@@ -200,11 +194,6 @@ class Swampyer {
       case MessageTypes.Error: {
         const [requestMessageType, requestId, details, error, args, kwargs] = data as MessageData[MessageTypes.Error];
         switch(requestMessageType) {
-          case MessageTypes.Unsubscribe: {
-            this.deferredPromises.unsubscribe[requestId]?.reject({ details, error, args, kwargs });
-            delete this.deferredPromises.unsubscribe[requestId];
-            break;
-          }
           case MessageTypes.Publish: {
             this.deferredPromises.publish[requestId]?.reject({ details, error, args, kwargs });
             delete this.deferredPromises.publish[requestId];
@@ -272,10 +261,27 @@ class Swampyer {
 
   async unsubscribe(subscriptionId: number): Promise<void> {
     const requestId = generateRandomInt();
-    const deferrd = deferredPromise<void>();
-    this.deferredPromises.unsubscribe[requestId] = deferrd;
+    const deferred = deferredPromise<void>();
+
     this.sendMessage(MessageTypes.Unsubscribe, [requestId, subscriptionId]);
-    return deferrd.promise;
+
+    const messageListenerCleanup = this.addEventListener('message', event => {
+      const [messageType, ...data] = JSON.parse(event.data) as BaseMessage;
+
+      if (messageType === MessageTypes.Unsubscribed && data[0] === requestId) {
+        deferred.resolve();
+        return;
+      }
+
+      if (messageType === MessageTypes.Error && data[0] === MessageTypes.Unsubscribe && data[1] === requestId) {
+        const [ , , details, error, args, kwargs] = data as MessageData[MessageTypes.Error];
+        deferred.reject({ details, error, args, kwargs });
+        return;
+      }
+    });
+
+    deferred.promise.catch(() => {}).finally(messageListenerCleanup);
+    return deferred.promise;
   }
 
   // TODO get options object as argument with `acknowledge` in it
