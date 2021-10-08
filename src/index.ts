@@ -46,7 +46,7 @@ interface MessageData {
   [MessageTypes.Challenge]: [authMethod: AuthMethod, extra: Record<string, unknown>];
   [MessageTypes.Authenticate]: [signature: string, extra: Record<string, unknown>];
   [MessageTypes.Goodbye]: unknown[];
-  [MessageTypes.Error]: unknown[];
+  [MessageTypes.Error]: [requestMessageType: MessageTypes, requestId: number, details: UnknownObject, error: string, args: unknown[], kwargs: UnknownObject];
   [MessageTypes.Publish]: unknown[];
   [MessageTypes.Published]: unknown[];
   [MessageTypes.Subscribe]: [requestId: number, options: UnknownObject, topic: string];
@@ -170,10 +170,20 @@ class Swampyer {
         delete this.deferredPromises.subscribe[requestId];
         break;
       }
+      case MessageTypes.Error: {
+        const [requestMessageType, requestId, details, error, args, kwargs] = data as MessageData[MessageTypes.Error];
+        switch(requestMessageType) {
+          case MessageTypes.Subscribe:
+            this.deferredPromises.subscribe[requestId]?.reject({ details, error, args, kwargs });
+            delete this.deferredPromises.subscribe[requestId];
+            break;
+        }
+        break;
+      }
     }
   }
 
-  public async call(uri: string, args?: unknown[], kwargs?: UnknownObject): Promise<unknown> {
+  async call(uri: string, args?: unknown[], kwargs?: UnknownObject): Promise<unknown> {
     const currentRequestId = this.sequentialRequestId;
     this.sequentialRequestId += 1;
 
@@ -183,7 +193,7 @@ class Swampyer {
     return deferred.promise;
   }
 
-  public async subscribe(uri: string, handler: SubscriptionHandler): Promise<number> {
+  async subscribe(uri: string, handler: SubscriptionHandler): Promise<number> {
     const requestId = generateRandomInt();
     const deferred = deferredPromise<number>();
     this.deferredPromises.subscribe[requestId] = {
