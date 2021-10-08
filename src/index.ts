@@ -42,7 +42,7 @@ type BaseMessage = [MessageTypes, ...unknown[]];
 interface MessageData {
   [MessageTypes.Hello]: [realm: string, details: Record<string, unknown> ];
   [MessageTypes.Welcome]: [sessionId: number, details: Record<string, unknown>];
-  [MessageTypes.Abort]: unknown[];
+  [MessageTypes.Abort]: [details: UnknownObject, reason: string];
   [MessageTypes.Challenge]: [authMethod: AuthMethod, extra: Record<string, unknown>];
   [MessageTypes.Authenticate]: [signature: string, extra: Record<string, unknown>];
   [MessageTypes.Goodbye]: unknown[];
@@ -149,16 +149,21 @@ class Swampyer {
   private messageHandler(event: MessageEvent<string>) {
     const [messageType, ...data] = JSON.parse(event.data) as BaseMessage;
     switch (messageType) {
-      case MessageTypes.Challenge: {
-        const [authMethod] = data as MessageData[MessageTypes.Challenge];
-        const authData = this.options.onchallenge?.(authMethod);
-        this.sendMessage(MessageTypes.Authenticate, [authData, {}]);
-        break;
-      }
       case MessageTypes.Welcome: {
         const [sessionId] = data as MessageData[MessageTypes.Welcome];
         this.sessionId = sessionId;
         this.deferredPromises.open.resolve();
+        break;
+      }
+      case MessageTypes.Abort: {
+        const [details, reason] = data as MessageData[MessageTypes.Abort];
+        this.deferredPromises.open.reject({ details, reason });
+        break;
+      }
+      case MessageTypes.Challenge: {
+        const [authMethod] = data as MessageData[MessageTypes.Challenge];
+        const authData = this.options.onchallenge?.(authMethod);
+        this.sendMessage(MessageTypes.Authenticate, [authData, {}]);
         break;
       }
       case MessageTypes.Result: {
