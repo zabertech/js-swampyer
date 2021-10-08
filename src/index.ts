@@ -1,3 +1,4 @@
+// TODO make sure that all usage of this type is justified
 type UnknownObject = Record<string | number | symbol, unknown>;
 
 enum AuthMethod {
@@ -48,8 +49,8 @@ interface MessageData {
   [MessageTypes.Error]: unknown[];
   [MessageTypes.Publish]: unknown[];
   [MessageTypes.Published]: unknown[];
-  [MessageTypes.Subscribe]: unknown[];
-  [MessageTypes.Subscribed]: unknown[];
+  [MessageTypes.Subscribe]: [requestId: number, options: UnknownObject, topic: string];
+  [MessageTypes.Subscribed]: [requestId: number, subscriptionId: number];
   [MessageTypes.Unsubscribe]: unknown[];
   [MessageTypes.Unsubscribed]: unknown[];
   [MessageTypes.Event]: unknown[];
@@ -73,7 +74,9 @@ interface SwampyerOptions {
   onopen?: () => void;
 }
 
-// TODO move this to a separate file
+type SubscriptionHandler = () => void;
+
+// TODO implement timeout for these deferred promises
 interface DeferredPromise<T> {
   resolve: (value: T) => void;
   reject: (value: unknown) => void;
@@ -88,6 +91,10 @@ function deferredPromise<T>(): DeferredPromise<T> {
   return deferInstance as DeferredPromise<T>;
 }
 
+function generateRandomInt() {
+  return Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
+}
+
 class Swampyer {
   private socket: WebSocket;
   private sessionId: number;
@@ -97,7 +104,10 @@ class Swampyer {
   private deferredPromises = {
     getNextMessageOfType: {} as Partial<Record<MessageTypes, DeferredPromise<unknown>[]>>,
     call: {} as { [callId: string]: DeferredPromise<unknown> },
+    subscribe: {} as { [requestId: number]: DeferredPromise<number> & { handler: SubscriptionHandler } },
   }
+
+  private subscriptionHandlers: { [subscriptionId: number]: SubscriptionHandler } = {};
 
   constructor(private readonly options: SwampyerOptions) {
     this.setupConnection();
@@ -156,21 +166,31 @@ class Swampyer {
     delete this.deferredPromises.getNextMessageOfType[messageType];
 
     switch (messageType) {
-      case MessageTypes.Challenge:
+      case MessageTypes.Challenge: {
         const [authMethod] = data as MessageData[MessageTypes.Challenge];
         const authData = this.options.onchallenge?.(authMethod);
         this.sendMessage(MessageTypes.Authenticate, [authData, {}]);
         break;
-      case MessageTypes.Welcome:
+      }
+      case MessageTypes.Welcome: {
         const [sessionId] = data as MessageData[MessageTypes.Welcome];
         this.sessionId = sessionId;
         this.options.onopen?.();
         break;
-      case MessageTypes.Result:
+      }
+      case MessageTypes.Result: {
         const [requestId, details, resultArray, resultObj ] = data as MessageData[MessageTypes.Result];
         this.deferredPromises.call[requestId]?.resolve(resultArray[0]);
         delete this.deferredPromises.call[requestId];
         break;
+      }
+      case MessageTypes.Subscribed: {
+        const [requestId, subscriptionId] = data as MessageData[MessageTypes.Subscribed];
+        this.subscriptionHandlers[subscriptionId] = this.deferredPromises.subscribe[requestId].handler;
+        this.deferredPromises.subscribe[requestId]?.resolve(subscriptionId);
+        delete this.deferredPromises.subscribe[requestId];
+        break;
+      }
     }
   }
 
@@ -181,6 +201,17 @@ class Swampyer {
     const deferred = deferredPromise<unknown>();
     this.sendMessage(MessageTypes.Call, [currentRequestId, {}, uri, args ?? [], kwargs ?? {}]);
     this.deferredPromises.call[currentRequestId] = deferred;
+    return deferred.promise;
+  }
+
+  public async subscribe(uri: string, handler: SubscriptionHandler): Promise<number> {
+    const requestId = generateRandomInt();
+    const deferred = deferredPromise<number>();
+    this.deferredPromises.subscribe[requestId] = {
+      ...deferred,
+      handler
+    };
+    this.sendMessage(MessageTypes.Subscribe, [requestId, {}, uri]);
     return deferred.promise;
   }
 }
