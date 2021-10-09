@@ -206,6 +206,7 @@ class Swampyer {
   }
 
   async register(uri: string, handler: RegistrationHandler): Promise<number> {
+    this.throwIfNotOpen();
     const requestId = this.registrationRequestId;
     this.registrationRequestId += 1;
     const [ , registrationId] = await this.sendRequest(MessageTypes.Register, [requestId, {}, uri], MessageTypes.Registered);
@@ -214,6 +215,7 @@ class Swampyer {
   }
 
   async unregister(registrationId: number): Promise<void> {
+    this.throwIfNotOpen();
     const requestId = this.unregistrationRequestId;
     this.unregistrationRequestId += 1;
     await this.sendRequest(MessageTypes.Unregister, [requestId, registrationId], MessageTypes.Unregistered);
@@ -221,6 +223,7 @@ class Swampyer {
   }
 
   async call(uri: string, args: unknown[] = [], kwargs: UnknownObject = {}): Promise<unknown> {
+    this.throwIfNotOpen();
     const requestId = this.callRequestId;
     this.callRequestId += 1;
     const [ , , resultArray ] = await this.sendRequest(MessageTypes.Call, [requestId, {}, uri, args, kwargs], MessageTypes.Result);
@@ -228,6 +231,7 @@ class Swampyer {
   }
 
   async subscribe(uri: string, handler: SubscriptionHandler): Promise<number> {
+    this.throwIfNotOpen();
     const requestId = generateRandomInt();
     const [ , subscriptionId] = await this.sendRequest(MessageTypes.Subscribe, [requestId, {}, uri], MessageTypes.Subscribed);
     this.subscriptionHandlers[subscriptionId] = handler;
@@ -235,12 +239,14 @@ class Swampyer {
   }
 
   async unsubscribe(subscriptionId: number): Promise<void> {
+    this.throwIfNotOpen();
     const requestId = generateRandomInt();
     await this.sendRequest(MessageTypes.Unsubscribe, [requestId, subscriptionId], MessageTypes.Unsubscribed);
     delete this.subscriptionHandlers[subscriptionId];
   }
 
   async publish(uri: string, args: unknown[] = [], kwargs: UnknownObject = {}, options: PublishOptions = {}): Promise<void> {
+    this.throwIfNotOpen();
     const requestId = this.publishRequestId;
     this.publishRequestId += 1;
 
@@ -253,7 +259,6 @@ class Swampyer {
   }
 
   private addEventListener<K extends keyof WebSocketEventMap>(type: K, listener: (this: WebSocket, ev: WebSocketEventMap[K]) => any) {
-    // TODO Make sure socket is open and ready for use
     if (!this.socket) {
       throw Error('Socket has not been opened yet')
     }
@@ -262,7 +267,6 @@ class Swampyer {
   }
 
   private sendMessage<T extends MessageTypes>(messageType: T, data: MessageData[T]) {
-    // TODO Make sure socket is open and ready for use
     if (!this.socket) {
       throw Error('Socket has not been opened yet')
     }
@@ -342,5 +346,11 @@ class Swampyer {
 
     this.subscriptionHandlers = {};
     this.registrationHandlers = {};
+  }
+
+  private throwIfNotOpen() {
+    if (!this.isOpen) {
+      throw Error('The connection is not open');
+    }
   }
 }
