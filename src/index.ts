@@ -107,6 +107,7 @@ class Swampyer {
   private callRequestId = 1;
   private publishRequestId = 1;
   private registrationRequestId = 1;
+  private unregistrationRequestId = 1;
 
   private subscriptionHandlers: { [subscriptionId: number]: SubscriptionHandler } = {};
   private registrationHandlers: { [registrationId: number]: RegistrationHandler } = {};
@@ -281,6 +282,7 @@ class Swampyer {
       const [messageType, ...data] = JSON.parse(event.data) as BaseMessage;
 
       if (messageType === MessageTypes.Unsubscribed && data[0] === requestId) {
+        delete this.subscriptionHandlers[subscriptionId];
         deferred.resolve();
         return;
       }
@@ -344,6 +346,33 @@ class Swampyer {
       }
 
       if (messageType === MessageTypes.Error && data[0] === MessageTypes.Register && data[1] === requestId) {
+        const [ , , details, error, args, kwargs] = data as MessageData[MessageTypes.Error];
+        deferred.reject({ details, error, args, kwargs });
+        return;
+      }
+    });
+
+    deferred.promise.catch(() => {}).finally(messageListenerCleanup);
+    return deferred.promise;
+  }
+
+  async unregister(registrationId: number): Promise<void> {
+    const requestId = this.unregistrationRequestId;
+    this.unregistrationRequestId += 1;
+    const deferred = deferredPromise<void>();
+
+    this.sendMessage(MessageTypes.Unregister, [requestId, registrationId]);
+
+    const messageListenerCleanup = this.addEventListener('message', event => {
+      const [messageType, ...data] = JSON.parse(event.data) as BaseMessage;
+
+      if (messageType === MessageTypes.Unregistered && data[0] === requestId) {
+        delete this.registrationHandlers[registrationId];
+        deferred.resolve();
+        return;
+      }
+
+      if (messageType === MessageTypes.Error && data[0] === MessageTypes.Unregister && data[1] === requestId) {
         const [ , , details, error, args, kwargs] = data as MessageData[MessageTypes.Error];
         deferred.reject({ details, error, args, kwargs });
         return;
