@@ -121,6 +121,12 @@ class Swampyer {
   constructor(private readonly options: SwampyerOptions) {}
 
   async open(): Promise<void> {
+    if (this.isOpen) {
+      throw Error('The connection is already open');
+    } else if (this.socket) {
+      throw Error('The connection is currently being opened');
+    }
+
     this.socket = new WebSocket(this.options.url, ['wamp.2.json']);
     const deferred = deferredPromise<void>();
 
