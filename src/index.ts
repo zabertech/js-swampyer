@@ -170,8 +170,8 @@ class Swampyer {
     deferred.promise
       .then(() => {
         this.onCloseCleanup.push(this.addEventListener('message', this.handleEvents.bind(this)));
-        this.onCloseCleanup.push(this.addEventListener('error', () => this.resetState()));
-        this.onCloseCleanup.push(this.addEventListener('close', () => this.resetState()));
+        this.onCloseCleanup.push(this.addEventListener('error', () => this.resetState())); // TODO emit `close` event
+        this.onCloseCleanup.push(this.addEventListener('close', () => this.resetState())); // TODO emit `close` event
       })
       .catch(() => {
         this.resetState();
@@ -201,6 +201,7 @@ class Swampyer {
     deferred.promise.catch(() => {}).finally(() => {
       messageListenerCleanup();
       this.resetState();
+      // TODO emit `close` event
     });
     return deferred.promise;
   }
@@ -326,6 +327,13 @@ class Swampyer {
         } catch (e) {
           this.sendMessage(MessageTypes.Error, [MessageTypes.Invocation, requestId, {}, '', [e], {}])
         }
+      }
+      case MessageTypes.Goodbye: {
+        const [details, reason] = data as MessageData[MessageTypes.Goodbye];
+        console.log('GOODBYE EVENT', details, reason);
+        this.sendMessage(MessageTypes.Goodbye, [{}, 'wamp.close.goodbye_and_out']);
+        this.resetState();
+        // TODO emit `close` event
       }
     }
   }
