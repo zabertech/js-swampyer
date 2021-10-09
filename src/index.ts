@@ -114,6 +114,10 @@ class Swampyer {
 
   private onCloseCleanup: (() => void)[] = [];
 
+  public get isOpen() {
+    return !!this.sessionId;
+  }
+
   constructor(private readonly options: SwampyerOptions) {}
 
   async open() {
@@ -164,11 +168,15 @@ class Swampyer {
 
     this.onCloseCleanup.push(this.addEventListener('message', this.handleEvents.bind(this)));
 
-    deferred.promise.catch(() => {}).finally(() => {
-      openListenerCleanup();
-      errorListenerCleanup();
-      messageListenerCleanup();
-    });
+    deferred.promise
+      .catch(() => {
+        this.resetState();
+      })
+      .finally(() => {
+        openListenerCleanup();
+        errorListenerCleanup();
+        messageListenerCleanup();
+      });
 
     return deferred.promise;
   }
@@ -292,5 +300,23 @@ class Swampyer {
         }
       }
     }
+  }
+
+  private resetState() {
+    this.sessionId = undefined;
+
+    this.onCloseCleanup.forEach(cleanupFunc => { cleanupFunc() });
+    this.onCloseCleanup = [];
+
+    this.socket?.close();
+    this.socket = undefined;
+
+    this.callRequestId = 1;
+    this.publishRequestId = 1;
+    this.registrationRequestId = 1;
+    this.unregistrationRequestId = 1;
+
+    this.subscriptionHandlers = {};
+    this.registrationHandlers = {};
   }
 }
