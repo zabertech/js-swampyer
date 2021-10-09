@@ -173,80 +173,6 @@ class Swampyer {
     return deferred.promise;
   }
 
-  private addEventListener<K extends keyof WebSocketEventMap>(type: K, listener: (this: WebSocket, ev: WebSocketEventMap[K]) => any) {
-    // TODO Make sure socket is open and ready for use
-    if (!this.socket) {
-      throw Error('Socket has not been opened yet')
-    }
-    this.socket.addEventListener(type, listener);
-    return () => this.socket?.removeEventListener(type, listener);
-  }
-
-  private sendMessage<T extends MessageTypes>(messageType: T, data: MessageData[T]) {
-    // TODO Make sure socket is open and ready for use
-    if (!this.socket) {
-      throw Error('Socket has not been opened yet')
-    }
-    this.socket.send(JSON.stringify([messageType, ...data]));
-  }
-
-  private handleEvents(event: MessageEvent<string>) {
-    const [messageType, ...data] = JSON.parse(event.data) as BaseMessage;
-    switch (messageType) {
-      case MessageTypes.Event: {
-        const [subscriptionId, publishId, details, args, kwargs] = data as MessageData[MessageTypes.Event];
-        this.subscriptionHandlers[subscriptionId]?.(args, kwargs);
-        break;
-      }
-      case MessageTypes.Invocation: {
-        const [requestId, registrationId, details, args, kwargs] = data as MessageData[MessageTypes.Invocation];
-        try {
-          const handler = this.registrationHandlers[registrationId];
-          if (!handler) {
-            this.sendMessage(
-              MessageTypes.Error,
-              [MessageTypes.Invocation, requestId, {}, 'com.error.unavailable', ['No handler available for this request'], {}]
-            );
-          } else {
-            const result = handler(args, kwargs);
-            this.sendMessage(MessageTypes.Yield, [requestId, {}, [result], {}]);
-          }
-        } catch (e) {
-          this.sendMessage(MessageTypes.Error, [MessageTypes.Invocation, requestId, {}, '', [e], {}])
-        }
-      }
-    }
-  }
-
-  /**
-   * Assumes that `pyaload[0]` is the `requestId` for the given request
-   */
-  private sendRequest<T extends MessageTypes, U extends MessageTypes>(
-    requestType: T, requestPayload: MessageData[T], awaitMessageType: U
-  ): Promise<MessageData[U]> {
-    const requestId = requestPayload[0];
-    const deferred = deferredPromise<MessageData[U]>();
-    this.sendMessage(requestType, requestPayload);
-
-    const messageListenerCleanup = this.addEventListener('message', event => {
-      const [messageType, ...data] = JSON.parse(event.data) as BaseMessage;
-
-      if (messageType === awaitMessageType && data[0] === requestId) {
-        deferred.resolve(data as MessageData[U]);
-        return;
-      }
-
-      if (messageType === MessageTypes.Error && data[0] === requestType && data[1] === requestId) {
-        const [ , , details, error, args, kwargs] = data as MessageData[MessageTypes.Error];
-        deferred.reject({ details, error, args, kwargs });
-        return;
-      }
-    });
-
-    deferred.promise.catch(() => {}).finally(messageListenerCleanup);
-    return deferred.promise;
-  }
-
   async register(uri: string, handler: RegistrationHandler): Promise<number> {
     const requestId = this.registrationRequestId;
     this.registrationRequestId += 1;
@@ -291,6 +217,80 @@ class Swampyer {
       this.sendMessage(MessageTypes.Publish, payload);
     } else {
       await this.sendRequest(MessageTypes.Publish, payload, MessageTypes.Published)
+    }
+  }
+
+  private addEventListener<K extends keyof WebSocketEventMap>(type: K, listener: (this: WebSocket, ev: WebSocketEventMap[K]) => any) {
+    // TODO Make sure socket is open and ready for use
+    if (!this.socket) {
+      throw Error('Socket has not been opened yet')
+    }
+    this.socket.addEventListener(type, listener);
+    return () => this.socket?.removeEventListener(type, listener);
+  }
+
+  private sendMessage<T extends MessageTypes>(messageType: T, data: MessageData[T]) {
+    // TODO Make sure socket is open and ready for use
+    if (!this.socket) {
+      throw Error('Socket has not been opened yet')
+    }
+    this.socket.send(JSON.stringify([messageType, ...data]));
+  }
+
+  /**
+   * Assumes that `pyaload[0]` is the `requestId` for the given request
+   */
+  private sendRequest<T extends MessageTypes, U extends MessageTypes>(
+    requestType: T, requestPayload: MessageData[T], awaitMessageType: U
+  ): Promise<MessageData[U]> {
+    const requestId = requestPayload[0];
+    const deferred = deferredPromise<MessageData[U]>();
+    this.sendMessage(requestType, requestPayload);
+
+    const messageListenerCleanup = this.addEventListener('message', event => {
+      const [messageType, ...data] = JSON.parse(event.data) as BaseMessage;
+
+      if (messageType === awaitMessageType && data[0] === requestId) {
+        deferred.resolve(data as MessageData[U]);
+        return;
+      }
+
+      if (messageType === MessageTypes.Error && data[0] === requestType && data[1] === requestId) {
+        const [ , , details, error, args, kwargs] = data as MessageData[MessageTypes.Error];
+        deferred.reject({ details, error, args, kwargs });
+        return;
+      }
+    });
+
+    deferred.promise.catch(() => {}).finally(messageListenerCleanup);
+    return deferred.promise;
+  }
+
+  private handleEvents(event: MessageEvent<string>) {
+    const [messageType, ...data] = JSON.parse(event.data) as BaseMessage;
+    switch (messageType) {
+      case MessageTypes.Event: {
+        const [subscriptionId, publishId, details, args, kwargs] = data as MessageData[MessageTypes.Event];
+        this.subscriptionHandlers[subscriptionId]?.(args, kwargs);
+        break;
+      }
+      case MessageTypes.Invocation: {
+        const [requestId, registrationId, details, args, kwargs] = data as MessageData[MessageTypes.Invocation];
+        try {
+          const handler = this.registrationHandlers[registrationId];
+          if (!handler) {
+            this.sendMessage(
+              MessageTypes.Error,
+              [MessageTypes.Invocation, requestId, {}, 'com.error.unavailable', ['No handler available for this request'], {}]
+            );
+          } else {
+            const result = handler(args, kwargs);
+            this.sendMessage(MessageTypes.Yield, [requestId, {}, [result], {}]);
+          }
+        } catch (e) {
+          this.sendMessage(MessageTypes.Error, [MessageTypes.Invocation, requestId, {}, '', [e], {}])
+        }
+      }
     }
   }
 }
