@@ -170,6 +170,8 @@ class Swampyer {
     deferred.promise
       .then(() => {
         this.onCloseCleanup.push(this.addEventListener('message', this.handleEvents.bind(this)));
+        this.onCloseCleanup.push(this.addEventListener('error', () => this.resetState()));
+        this.onCloseCleanup.push(this.addEventListener('close', () => this.resetState()));
       })
       .catch(() => {
         this.resetState();
