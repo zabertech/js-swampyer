@@ -43,7 +43,7 @@ interface MessageData {
   [MessageTypes.Abort]: [details: UnknownObject, reason: string];
   [MessageTypes.Challenge]: [authMethod: AuthMethod, extra: Record<string, unknown>];
   [MessageTypes.Authenticate]: [signature: string, extra: Record<string, unknown>];
-  [MessageTypes.Goodbye]: unknown[];
+  [MessageTypes.Goodbye]: [details: UnknownObject, reason: string];
   [MessageTypes.Error]: [
     requestMessageType: MessageTypes, requestId: number, details: UnknownObject, error: string,
     args: unknown[], kwargs: UnknownObject
@@ -120,7 +120,7 @@ class Swampyer {
 
   constructor(private readonly options: SwampyerOptions) {}
 
-  async open() {
+  async open(): Promise<void> {
     this.socket = new WebSocket(this.options.url, ['wamp.2.json']);
     const deferred = deferredPromise<void>();
 
@@ -129,12 +129,7 @@ class Swampyer {
         authid: this.options.authid,
         agent: 'swampyer-js',
         authmethods: this.options.authmethods || ['anonymous'],
-        roles: {
-          subscriber: {},
-          publisher: {},
-          caller: {},
-          callee: {},
-        }
+        roles: {subscriber: {}, publisher: {}, caller: {}, callee: {}}
       }]);
     });
 
@@ -166,9 +161,10 @@ class Swampyer {
       }
     });
 
-    this.onCloseCleanup.push(this.addEventListener('message', this.handleEvents.bind(this)));
-
     deferred.promise
+      .then(() => {
+        this.onCloseCleanup.push(this.addEventListener('message', this.handleEvents.bind(this)));
+      })
       .catch(() => {
         this.resetState();
       })
@@ -177,7 +173,27 @@ class Swampyer {
         errorListenerCleanup();
         messageListenerCleanup();
       });
+    return deferred.promise;
+  }
 
+  async close(): Promise<void> {
+    if (!this.isOpen) {
+      throw Error('The connection is not open and can not be closed');
+    }
+
+    this.sendMessage(MessageTypes.Goodbye, [{}, 'wamp.close.system_shutdown']);
+    const deferred = deferredPromise<void>();
+    const messageListenerCleanup = this.addEventListener('message', event => {
+      const [messageType] = JSON.parse(event.data) as BaseMessage;
+      if (messageType === MessageTypes.Goodbye) {
+        deferred.resolve();
+      }
+    });
+
+    deferred.promise.catch(() => {}).finally(() => {
+      messageListenerCleanup();
+      this.resetState();
+    });
     return deferred.promise;
   }
 
