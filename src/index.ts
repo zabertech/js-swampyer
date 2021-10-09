@@ -218,106 +218,25 @@ class Swampyer {
     }
   }
 
-  async call(uri: string, args: unknown[] = [], kwargs: UnknownObject = {}): Promise<unknown> {
-    const requestId = this.callRequestId;
-    this.callRequestId += 1;
-
-    const deferred = deferredPromise<unknown>();
-    this.sendMessage(MessageTypes.Call, [requestId, {}, uri, args, kwargs]);
-
-    const messageListenerCleanup = this.addEventListener('message', event => {
-      const [messageType, ...data] = JSON.parse(event.data) as BaseMessage;
-
-      if (messageType === MessageTypes.Result && data[0] === requestId) {
-        const [ , , resultArray ] = data as MessageData[MessageTypes.Result];
-        deferred.resolve(resultArray[0]);
-        return;
-      }
-
-      if (messageType === MessageTypes.Error && data[0] === MessageTypes.Call && data[1] === requestId) {
-        const [ , , details, error, args, kwargs] = data as MessageData[MessageTypes.Error];
-        deferred.reject({ details, error, args, kwargs });
-        return;
-      }
-    });
-
-    deferred.promise.catch(() => {}).finally(messageListenerCleanup);
-    return deferred.promise;
-  }
-
-  async subscribe(uri: string, handler: SubscriptionHandler): Promise<number> {
-    const requestId = generateRandomInt();
-    const deferred = deferredPromise<number>();
-
-    this.sendMessage(MessageTypes.Subscribe, [requestId, {}, uri]);
+  /**
+   * Assumes that `pyaload[0]` is the `requestId` for the given request
+   */
+  private sendRequest<T extends MessageTypes, U extends MessageTypes>(
+    requestType: T, requestPayload: MessageData[T], awaitMessageType: U
+  ): Promise<MessageData[U]> {
+    const requestId = requestPayload[0];
+    const deferred = deferredPromise<MessageData[U]>();
+    this.sendMessage(requestType, requestPayload);
 
     const messageListenerCleanup = this.addEventListener('message', event => {
       const [messageType, ...data] = JSON.parse(event.data) as BaseMessage;
 
-      if (messageType === MessageTypes.Subscribed && data[0] === requestId) {
-        const [ , subscriptionId] = data as MessageData[MessageTypes.Subscribed];
-        this.subscriptionHandlers[subscriptionId] = handler;
-        deferred.resolve(subscriptionId);
+      if (messageType === awaitMessageType && data[0] === requestId) {
+        deferred.resolve(data as MessageData[U]);
         return;
       }
 
-      if (messageType === MessageTypes.Error && data[0] === MessageTypes.Subscribe && data[1] === requestId) {
-        const [ , , details, error, args, kwargs] = data as MessageData[MessageTypes.Error];
-        deferred.reject({ details, error, args, kwargs });
-        return;
-      }
-    });
-
-    deferred.promise.catch(() => {}).finally(messageListenerCleanup);
-    return deferred.promise;
-  }
-
-  async unsubscribe(subscriptionId: number): Promise<void> {
-    const requestId = generateRandomInt();
-    const deferred = deferredPromise<void>();
-
-    this.sendMessage(MessageTypes.Unsubscribe, [requestId, subscriptionId]);
-
-    const messageListenerCleanup = this.addEventListener('message', event => {
-      const [messageType, ...data] = JSON.parse(event.data) as BaseMessage;
-
-      if (messageType === MessageTypes.Unsubscribed && data[0] === requestId) {
-        delete this.subscriptionHandlers[subscriptionId];
-        deferred.resolve();
-        return;
-      }
-
-      if (messageType === MessageTypes.Error && data[0] === MessageTypes.Unsubscribe && data[1] === requestId) {
-        const [ , , details, error, args, kwargs] = data as MessageData[MessageTypes.Error];
-        deferred.reject({ details, error, args, kwargs });
-        return;
-      }
-    });
-
-    deferred.promise.catch(() => {}).finally(messageListenerCleanup);
-    return deferred.promise;
-  }
-
-  async publish(uri: string, args: unknown[] = [], kwargs: UnknownObject = {}, options: PublishOptions = {}): Promise<void> {
-    const requestId = this.publishRequestId;
-    this.publishRequestId += 1;
-
-    this.sendMessage(MessageTypes.Publish, [requestId, options, uri, args, kwargs]);
-    if (!options.acknowledge) {
-      return;
-    }
-
-    const deferred = deferredPromise<void>();
-
-    const messageListenerCleanup = this.addEventListener('message', event => {
-      const [messageType, ...data] = JSON.parse(event.data) as BaseMessage;
-
-      if (messageType === MessageTypes.Published && data[0] === requestId) {
-        deferred.resolve();
-        return;
-      }
-
-      if (messageType === MessageTypes.Error && data[0] === MessageTypes.Publish && data[1] === requestId) {
+      if (messageType === MessageTypes.Error && data[0] === requestType && data[1] === requestId) {
         const [ , , details, error, args, kwargs] = data as MessageData[MessageTypes.Error];
         deferred.reject({ details, error, args, kwargs });
         return;
@@ -331,55 +250,47 @@ class Swampyer {
   async register(uri: string, handler: RegistrationHandler): Promise<number> {
     const requestId = this.registrationRequestId;
     this.registrationRequestId += 1;
-
-    const deferred = deferredPromise<number>();
-    this.sendMessage(MessageTypes.Register, [requestId, {}, uri]);
-
-    const messageListenerCleanup = this.addEventListener('message', event => {
-      const [messageType, ...data] = JSON.parse(event.data) as BaseMessage;
-
-      if (messageType === MessageTypes.Registered && data[0] === requestId) {
-        const [ , registrationId] = data as MessageData[MessageTypes.Registered];
-        this.registrationHandlers[registrationId] = handler;
-        deferred.resolve(registrationId);
-        return;
-      }
-
-      if (messageType === MessageTypes.Error && data[0] === MessageTypes.Register && data[1] === requestId) {
-        const [ , , details, error, args, kwargs] = data as MessageData[MessageTypes.Error];
-        deferred.reject({ details, error, args, kwargs });
-        return;
-      }
-    });
-
-    deferred.promise.catch(() => {}).finally(messageListenerCleanup);
-    return deferred.promise;
+    const [ , registrationId] = await this.sendRequest(MessageTypes.Register, [requestId, {}, uri], MessageTypes.Registered);
+    this.registrationHandlers[registrationId] = handler;
+    return registrationId;
   }
 
   async unregister(registrationId: number): Promise<void> {
     const requestId = this.unregistrationRequestId;
     this.unregistrationRequestId += 1;
-    const deferred = deferredPromise<void>();
+    await this.sendRequest(MessageTypes.Unregister, [requestId, registrationId], MessageTypes.Unregistered);
+    delete this.registrationHandlers[registrationId];
+  }
 
-    this.sendMessage(MessageTypes.Unregister, [requestId, registrationId]);
+  async call(uri: string, args: unknown[] = [], kwargs: UnknownObject = {}): Promise<unknown> {
+    const requestId = this.callRequestId;
+    this.callRequestId += 1;
+    const [ , , resultArray ] = await this.sendRequest(MessageTypes.Call, [requestId, {}, uri, args, kwargs], MessageTypes.Result);
+    return resultArray[0];
+  }
 
-    const messageListenerCleanup = this.addEventListener('message', event => {
-      const [messageType, ...data] = JSON.parse(event.data) as BaseMessage;
+  async subscribe(uri: string, handler: SubscriptionHandler): Promise<number> {
+    const requestId = generateRandomInt();
+    const [ , subscriptionId] = await this.sendRequest(MessageTypes.Subscribe, [requestId, {}, uri], MessageTypes.Subscribed);
+    this.subscriptionHandlers[subscriptionId] = handler;
+    return subscriptionId;
+  }
 
-      if (messageType === MessageTypes.Unregistered && data[0] === requestId) {
-        delete this.registrationHandlers[registrationId];
-        deferred.resolve();
-        return;
-      }
+  async unsubscribe(subscriptionId: number): Promise<void> {
+    const requestId = generateRandomInt();
+    await this.sendRequest(MessageTypes.Unsubscribe, [requestId, subscriptionId], MessageTypes.Unsubscribed);
+    delete this.subscriptionHandlers[subscriptionId];
+  }
 
-      if (messageType === MessageTypes.Error && data[0] === MessageTypes.Unregister && data[1] === requestId) {
-        const [ , , details, error, args, kwargs] = data as MessageData[MessageTypes.Error];
-        deferred.reject({ details, error, args, kwargs });
-        return;
-      }
-    });
+  async publish(uri: string, args: unknown[] = [], kwargs: UnknownObject = {}, options: PublishOptions = {}): Promise<void> {
+    const requestId = this.publishRequestId;
+    this.publishRequestId += 1;
 
-    deferred.promise.catch(() => {}).finally(messageListenerCleanup);
-    return deferred.promise;
+    const payload: MessageData[MessageTypes.Publish] = [requestId, options, uri, args, kwargs];
+    if (options.acknowledge) {
+      this.sendMessage(MessageTypes.Publish, payload);
+    } else {
+      await this.sendRequest(MessageTypes.Publish, payload, MessageTypes.Published)
+    }
   }
 }
