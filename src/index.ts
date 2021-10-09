@@ -262,6 +262,7 @@ class Swampyer {
   private addEventListener<K extends keyof WebSocketEventMap>(type: K, listener: (this: WebSocket, ev: WebSocketEventMap[K]) => any) {
     if (!this.socket) {
       throw Error('Socket has not been opened yet')
+      // TODO emit error event or close everything instead
     }
     this.socket.addEventListener(type, listener);
     return () => this.socket?.removeEventListener(type, listener);
@@ -270,12 +271,13 @@ class Swampyer {
   private sendMessage<T extends MessageTypes>(messageType: T, data: MessageData[T]) {
     if (!this.socket) {
       throw Error('Socket has not been opened yet')
+      // TODO emit error event or close everything instead
     }
     this.socket.send(JSON.stringify([messageType, ...data]));
   }
 
   /**
-   * Assumes that `pyaload[0]` is the `requestId` for the given request
+   * Assumes that `payload[0]` is the `requestId` for the given request
    */
   private sendRequest<T extends MessageTypes, U extends MessageTypes>(
     requestType: T, requestPayload: MessageData[T], awaitMessageType: U
@@ -313,20 +315,21 @@ class Swampyer {
       }
       case MessageTypes.Invocation: {
         const [requestId, registrationId, details, args, kwargs] = data as MessageData[MessageTypes.Invocation];
-        try {
-          const handler = this.registrationHandlers[registrationId];
-          if (!handler) {
-            this.sendMessage(
-              MessageTypes.Error,
-              [MessageTypes.Invocation, requestId, {}, 'com.error.unavailable', ['No handler available for this request'], {}]
-            );
-          } else {
+        const handler = this.registrationHandlers[registrationId];
+        if (!handler) {
+          this.sendMessage(
+            MessageTypes.Error,
+            [MessageTypes.Invocation, requestId, {}, 'com.error.unavailable', ['No handler available for this request'], {}]
+          );
+        } else {
+          try {
             const result = handler(args, kwargs);
             this.sendMessage(MessageTypes.Yield, [requestId, {}, [result], {}]);
+          } catch (e) {
+            this.sendMessage(MessageTypes.Error, [MessageTypes.Invocation, requestId, {}, 'error.invoke.failed', [e], {}])
           }
-        } catch (e) {
-          this.sendMessage(MessageTypes.Error, [MessageTypes.Invocation, requestId, {}, '', [e], {}])
         }
+        break;
       }
       case MessageTypes.Goodbye: {
         const [details, reason] = data as MessageData[MessageTypes.Goodbye];
@@ -334,6 +337,7 @@ class Swampyer {
         this.sendMessage(MessageTypes.Goodbye, [{}, 'wamp.close.goodbye_and_out']);
         this.resetState();
         // TODO emit `close` event
+        break;
       }
     }
   }
