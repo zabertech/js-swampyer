@@ -72,6 +72,7 @@ interface SwampyerOptions {
   authid: string;
   authmethods: AuthMethod[]
   onchallenge?: (authMethod: AuthMethod) => string;
+  onopen?: () => void;
 }
 
 type SubscriptionHandler = (args: unknown[], kwargs: UnknownObject) => void;
@@ -172,6 +173,7 @@ class Swampyer {
         this.onCloseCleanup.push(this.addEventListener('message', this.handleEvents.bind(this)));
         this.onCloseCleanup.push(this.addEventListener('error', () => this.resetState())); // TODO emit `close` event
         this.onCloseCleanup.push(this.addEventListener('close', () => this.resetState())); // TODO emit `close` event
+        this.options.onopen?.();
       })
       .catch(() => {
         this.resetState();
