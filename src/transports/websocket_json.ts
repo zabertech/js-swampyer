@@ -22,7 +22,7 @@ export class WebsocketJsonTransport implements TransportProvider {
       while (true) {
         this.socket.send(JSON.stringify(await this.transport.read()));
       }
-    } finally {
+    } catch (e) {
       this.socket.close();
     }
   }
