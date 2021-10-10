@@ -52,8 +52,8 @@ export class Transport {
     if (this._isClosed) {
       return;
     }
-    err ? this._dispatchEvent('error', err) : this._dispatchEvent('close', undefined);
     this._isClosed = true;
+    err ? this._dispatchEvent('error', err) : this._dispatchEvent('close', undefined);
     this.ongoingReads.forEach(deferred => deferred.reject(new Error('closed')));
     this.ongoingReads = [];
   }
