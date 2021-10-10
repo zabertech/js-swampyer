@@ -11,7 +11,7 @@ export class WebsocketJsonTransport implements TransportProvider {
 
     this.socket.onopen = () => this.transport.open();
     this.socket.onclose = () => this.transport.close();
-    this.socket.onerror = () => this.transport.close(new Error('Websocket connection has been closed'));
+    this.socket.onerror = () => this.transport.close(new Error('Websocket connection encountered an error'));
     this.socket.onmessage = event => this.transport.write(JSON.parse(event.data));
 
     this.readLoop();

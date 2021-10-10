@@ -1,7 +1,8 @@
+import { BaseMessage, MessageTypes, MessageData } from '../types';
 import { deferredPromise, DeferredPromise } from '../utils';
 
 interface EventData {
-  message: unknown[];
+  message: BaseMessage;
   open: undefined;
   close: undefined;
   error: Error;
@@ -12,7 +13,7 @@ export interface TransportProvider {
 }
 
 export class Transport {
-  private ongoingReads: DeferredPromise<unknown[]>[] = [];
+  private ongoingReads: DeferredPromise<BaseMessage>[] = [];
 
   private _isClosed = false;
   public get isClosed(): boolean {
@@ -34,12 +35,12 @@ export class Transport {
     if (this._isClosed) {
       throw Error('closed');
     }
-    const deferred = deferredPromise<unknown[]>();
+    const deferred = deferredPromise<BaseMessage>();
     this.ongoingReads.push(deferred);
     return deferred.promise;
   }
 
-  write(payload: unknown[]) {
+  write(payload: BaseMessage) {
     this._dispatchEvent('message', payload);
   }
 
@@ -70,8 +71,8 @@ export class Transport {
   /**
    * For use by the library
    */
-  _send(payload: unknown[]) {
-    this.ongoingReads.forEach(deferred => deferred.resolve(payload));
+  _send<T extends MessageTypes>(messageType: T, data: MessageData[T]) {
+    this.ongoingReads.forEach(deferred => deferred.resolve([messageType, ...data]));
     this.ongoingReads = [];
   }
 

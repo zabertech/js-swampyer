@@ -1,10 +1,10 @@
+import type { Transport } from './transports/transport';
 import {
   AuthMethod, BaseMessage, MessageData, MessageTypes, PublishOptions, RegistrationHandler, SubscriptionHandler, UnknownObject
 } from './types';
 import { generateRandomInt, deferredPromise } from './utils';
 
 export interface SwampyerOptions {
-  url: string;
   realm: string;
   authid: string;
   authmethods: AuthMethod[]
@@ -13,7 +13,7 @@ export interface SwampyerOptions {
 }
 
 export class Swampyer {
-  private socket: WebSocket | undefined;
+  private transport: Transport | undefined;
   private sessionId: number | undefined;
 
   private callRequestId = 1;
@@ -32,18 +32,18 @@ export class Swampyer {
 
   constructor(private readonly options: SwampyerOptions) {}
 
-  async open(): Promise<void> {
+  async open(transport: Transport): Promise<void> {
     if (this.isOpen) {
       throw Error('The connection is already open');
-    } else if (this.socket) {
+    } else if (this.transport) {
       throw Error('The connection is currently being opened');
     }
 
-    this.socket = new WebSocket(this.options.url, ['wamp.2.json']);
+    this.transport = transport;
     const deferred = deferredPromise<void>();
 
-    const openListenerCleanup = this.addEventListener('open', () => {
-      this.sendMessage(MessageTypes.Hello, [this.options.realm, {
+    const openListenerCleanup = this.transport._addEventListener('open', () => {
+      this.transport!._send(MessageTypes.Hello, [this.options.realm, {
         authid: this.options.authid,
         agent: 'swampyer-js',
         authmethods: this.options.authmethods || ['anonymous'],
@@ -51,13 +51,12 @@ export class Swampyer {
       }]);
     });
 
-    const errorListenerCleanup = this.addEventListener('error', () => {
+    const errorListenerCleanup = this.transport._addEventListener('error', () => {
       // TODO create the error object properly
       deferred.reject(new Error('An error ocurred while opening the WebSocket connection'));
     });
 
-    const messageListenerCleanup = this.addEventListener('message', event => {
-      const [messageType, ...data] = JSON.parse(event.data) as BaseMessage;
+    const messageListenerCleanup = this.transport._addEventListener('message', ([messageType, ...data]) => {
       switch (messageType) {
         case MessageTypes.Welcome: {
           const [sessionId] = data as MessageData[MessageTypes.Welcome];
@@ -73,7 +72,7 @@ export class Swampyer {
         case MessageTypes.Challenge: {
           const [authMethod] = data as MessageData[MessageTypes.Challenge];
           const authData = this.options.onchallenge?.(authMethod) ?? '';
-          this.sendMessage(MessageTypes.Authenticate, [authData, {}]);
+          this.transport!._send(MessageTypes.Authenticate, [authData, {}]);
           break;
         }
       }
@@ -81,9 +80,9 @@ export class Swampyer {
 
     deferred.promise
       .then(() => {
-        this.onCloseCleanup.push(this.addEventListener('message', this.handleEvents.bind(this)));
-        this.onCloseCleanup.push(this.addEventListener('error', () => this.resetState())); // TODO emit `close` event
-        this.onCloseCleanup.push(this.addEventListener('close', () => this.resetState())); // TODO emit `close` event
+        this.onCloseCleanup.push(this.transport!._addEventListener('message', this.handleEvents.bind(this)));
+        this.onCloseCleanup.push(this.transport!._addEventListener('error', () => this.resetState())); // TODO emit `close` event
+        this.onCloseCleanup.push(this.transport!._addEventListener('close', () => this.resetState())); // TODO emit `close` event
         this.options.onopen?.();
       })
       .catch(() => {
@@ -102,10 +101,9 @@ export class Swampyer {
       throw Error('The connection is not open and can not be closed');
     }
 
-    this.sendMessage(MessageTypes.Goodbye, [{}, 'wamp.close.system_shutdown']);
+    this.transport!._send(MessageTypes.Goodbye, [{}, 'wamp.close.system_shutdown']);
     const deferred = deferredPromise<void>();
-    const messageListenerCleanup = this.addEventListener('message', event => {
-      const [messageType] = JSON.parse(event.data) as BaseMessage;
+    const messageListenerCleanup = this.transport!._addEventListener('message', ([messageType]) => {
       if (messageType === MessageTypes.Goodbye) {
         deferred.resolve();
       }
@@ -166,27 +164,10 @@ export class Swampyer {
 
     const payload: MessageData[MessageTypes.Publish] = [requestId, options, uri, args, kwargs];
     if (options.acknowledge) {
-      this.sendMessage(MessageTypes.Publish, payload);
+      this.transport!._send(MessageTypes.Publish, payload);
     } else {
       await this.sendRequest(MessageTypes.Publish, payload, MessageTypes.Published)
     }
-  }
-
-  private addEventListener<K extends keyof WebSocketEventMap>(type: K, listener: (this: WebSocket, ev: WebSocketEventMap[K]) => any) {
-    if (!this.socket) {
-      throw Error('Socket has not been opened yet')
-      // TODO emit error event or close everything instead
-    }
-    this.socket.addEventListener(type, listener);
-    return () => this.socket?.removeEventListener(type, listener);
-  }
-
-  private sendMessage<T extends MessageTypes>(messageType: T, data: MessageData[T]) {
-    if (!this.socket) {
-      throw Error('Socket has not been opened yet')
-      // TODO emit error event or close everything instead
-    }
-    this.socket.send(JSON.stringify([messageType, ...data]));
   }
 
   /**
@@ -195,13 +176,12 @@ export class Swampyer {
   private sendRequest<T extends MessageTypes, U extends MessageTypes>(
     requestType: T, requestPayload: MessageData[T], awaitMessageType: U
   ): Promise<MessageData[U]> {
+    this.throwIfNotOpen();
     const requestId = requestPayload[0];
     const deferred = deferredPromise<MessageData[U]>();
-    this.sendMessage(requestType, requestPayload);
+    this.transport!._send(requestType, requestPayload);
 
-    const messageListenerCleanup = this.addEventListener('message', event => {
-      const [messageType, ...data] = JSON.parse(event.data) as BaseMessage;
-
+    const messageListenerCleanup = this.transport?._addEventListener('message', ([messageType, ...data]) => {
       if (messageType === awaitMessageType && data[0] === requestId) {
         deferred.resolve(data as MessageData[U]);
         return;
@@ -218,8 +198,7 @@ export class Swampyer {
     return deferred.promise;
   }
 
-  private handleEvents(event: MessageEvent<string>) {
-    const [messageType, ...data] = JSON.parse(event.data) as BaseMessage;
+  private handleEvents([messageType, ...data]: BaseMessage) {
     switch (messageType) {
       case MessageTypes.Event: {
         const [subscriptionId, publishId, details, args, kwargs] = data as MessageData[MessageTypes.Event];
@@ -230,16 +209,16 @@ export class Swampyer {
         const [requestId, registrationId, details, args, kwargs] = data as MessageData[MessageTypes.Invocation];
         const handler = this.registrationHandlers[registrationId];
         if (!handler) {
-          this.sendMessage(
+          this.transport!._send(
             MessageTypes.Error,
             [MessageTypes.Invocation, requestId, {}, 'com.error.unavailable', ['No handler available for this request'], {}]
           );
         } else {
           try {
             const result = handler(args, kwargs);
-            this.sendMessage(MessageTypes.Yield, [requestId, {}, [result], {}]);
+            this.transport!._send(MessageTypes.Yield, [requestId, {}, [result], {}]);
           } catch (e) {
-            this.sendMessage(MessageTypes.Error, [MessageTypes.Invocation, requestId, {}, 'error.invoke.failed', [e], {}])
+            this.transport!._send(MessageTypes.Error, [MessageTypes.Invocation, requestId, {}, 'error.invoke.failed', [e], {}])
           }
         }
         break;
@@ -247,7 +226,7 @@ export class Swampyer {
       case MessageTypes.Goodbye: {
         const [details, reason] = data as MessageData[MessageTypes.Goodbye];
         console.log('GOODBYE EVENT', details, reason);
-        this.sendMessage(MessageTypes.Goodbye, [{}, 'wamp.close.goodbye_and_out']);
+        this.transport!._send(MessageTypes.Goodbye, [{}, 'wamp.close.goodbye_and_out']);
         this.resetState();
         // TODO emit `close` event
         break;
@@ -261,8 +240,8 @@ export class Swampyer {
     this.onCloseCleanup.forEach(cleanupFunc => { cleanupFunc() });
     this.onCloseCleanup = [];
 
-    this.socket?.close();
-    this.socket = undefined;
+    this.transport?.close();
+    this.transport = undefined;
 
     this.callRequestId = 1;
     this.publishRequestId = 1;
