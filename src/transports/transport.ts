@@ -14,6 +14,11 @@ export interface TransportProvider {
 export class Transport {
   private ongoingReads: DeferredPromise<unknown[]>[] = [];
 
+  private _isClosed = false;
+  public get isClosed(): boolean {
+    return this.isClosed;
+  }
+
   private eventListeners: Record<keyof EventData, ((...data: unknown[]) => void)[]> = {
     message: [],
     open: [],
@@ -21,7 +26,14 @@ export class Transport {
     error: [],
   };
 
+  /**
+   * An exception indicates that the transport has been closed and there will be no more messages
+   * to read on this transport.
+   */
   async read() {
+    if (this._isClosed) {
+      throw Error('closed');
+    }
     const deferred = deferredPromise<unknown[]>();
     this.ongoingReads.push(deferred);
     return deferred.promise;
@@ -36,7 +48,13 @@ export class Transport {
   }
 
   close(err?: Error) {
+    if (this._isClosed) {
+      return;
+    }
     err ? this._dispatchEvent('error', err) : this._dispatchEvent('close', undefined);
+    this._isClosed = true;
+    this.ongoingReads.forEach(deferred => deferred.reject(new Error('closed')));
+    this.ongoingReads = [];
   }
 
   /**

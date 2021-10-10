@@ -5,19 +5,25 @@ export class WebsocketJsonTransport implements TransportProvider {
 
   public readonly transport: Transport;
 
-  constructor(...args: ConstructorParameters<typeof WebSocket>) {
-    this.socket = new WebSocket(...args);
+  constructor(url: string | URL) {
+    this.socket = new WebSocket(url, ['wamp.2.json']);
     this.transport = new Transport();
 
     this.socket.onopen = () => this.transport.open();
     this.socket.onclose = () => this.transport.close();
     this.socket.onerror = () => this.transport.close(new Error('Websocket connection has been closed'));
     this.socket.onmessage = event => this.transport.write(JSON.parse(event.data));
+
+    this.readLoop();
   }
 
-  async readLoop() {
-    while (true) {
-      this.socket.send(JSON.stringify(await this.transport.read()));
+  private async readLoop() {
+    try {
+      while (true) {
+        this.socket.send(JSON.stringify(await this.transport.read()));
+      }
+    } finally {
+      this.socket.close();
     }
   }
 }
