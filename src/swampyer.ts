@@ -1,4 +1,4 @@
-import type { Transport } from './transports/transport';
+import type { Transport, TransportProvider } from './transports/transport';
 import {
   AuthMethod, BaseMessage, MessageData, MessageTypes, PublishOptions, RegistrationHandler, SubscriptionHandler, UnknownObject
 } from './types';
@@ -32,14 +32,14 @@ export class Swampyer {
 
   constructor(private readonly options: SwampyerOptions) {}
 
-  async open(transport: Transport): Promise<void> {
+  async open(transport: TransportProvider): Promise<void> {
     if (this.isOpen) {
       throw Error('The connection is already open');
     } else if (this.transport) {
       throw Error('The connection is currently being opened');
     }
 
-    this.transport = transport;
+    this.transport = transport.transport;
     const deferred = deferredPromise<void>();
 
     const openListenerCleanup = this.transport._addEventListener('open', () => {
