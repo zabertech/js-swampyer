@@ -2,6 +2,7 @@ import { WampMessage, MessageTypes, MessageData } from '../types';
 import { deferredPromise, DeferredPromise, SimpleEventEmitter } from '../utils';
 
 export interface TransportProvider {
+  open: () => void;
   transport: Transport;
 }
 

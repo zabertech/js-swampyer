@@ -37,14 +37,14 @@ export class Swampyer {
 
   constructor(private readonly options: SwampyerOptions) {}
 
-  async open(transport: TransportProvider): Promise<void> {
+  async open(transportProvider: TransportProvider): Promise<void> {
     if (this.isOpen) {
       throw Error('The connection is already open');
     } else if (this.transport) {
       throw Error('The connection is currently being opened');
     }
 
-    this.transport = transport.transport;
+    this.transport = transportProvider.transport;
     const deferred = deferredPromise<void>();
 
     const openListenerCleanup = this.transport.openEvent.addEventListener(() => {
@@ -86,6 +86,8 @@ export class Swampyer {
         }
       }
     });
+
+    transportProvider.open();
 
     deferred.promise
       .then(() => {
@@ -241,7 +243,6 @@ export class Swampyer {
         console.log('GOODBYE EVENT', details, reason);
         this.transport!._send(MessageTypes.Goodbye, [{}, 'wamp.close.goodbye_and_out']);
         this.resetState();
-        // TODO emit `close` event
         break;
       }
     }
