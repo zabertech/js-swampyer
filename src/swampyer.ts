@@ -42,7 +42,7 @@ export class Swampyer {
     this.transport = transport.transport;
     const deferred = deferredPromise<void>();
 
-    const openListenerCleanup = this.transport._addEventListener('open', () => {
+    const openListenerCleanup = this.transport.openEvent.addEventListener(() => {
       this.transport!._send(MessageTypes.Hello, [this.options.realm, {
         authid: this.options.authid,
         agent: 'swampyer-js',
@@ -51,12 +51,12 @@ export class Swampyer {
       }]);
     });
 
-    const errorListenerCleanup = this.transport._addEventListener('error', () => {
+    const errorListenerCleanup = this.transport.errorEvent.addEventListener(() => {
       // TODO create the error object properly
       deferred.reject(new Error('An error ocurred while opening the WebSocket connection'));
     });
 
-    const messageListenerCleanup = this.transport._addEventListener('message', ([messageType, ...data]) => {
+    const messageListenerCleanup = this.transport.messageEvent.addEventListener(([messageType, ...data]) => {
       switch (messageType) {
         case MessageTypes.Welcome: {
           const [sessionId] = data as MessageData[MessageTypes.Welcome];
@@ -80,9 +80,9 @@ export class Swampyer {
 
     deferred.promise
       .then(() => {
-        this.onCloseCleanup.push(this.transport!._addEventListener('message', this.handleEvents.bind(this)));
-        this.onCloseCleanup.push(this.transport!._addEventListener('error', () => this.resetState())); // TODO emit `close` event
-        this.onCloseCleanup.push(this.transport!._addEventListener('close', () => this.resetState())); // TODO emit `close` event
+        this.onCloseCleanup.push(this.transport!.messageEvent.addEventListener(this.handleEvents.bind(this)));
+        this.onCloseCleanup.push(this.transport!.errorEvent.addEventListener(() => this.resetState())); // TODO emit `close` event
+        this.onCloseCleanup.push(this.transport!.closeEvent.addEventListener(() => this.resetState())); // TODO emit `close` event
         this.options.onopen?.();
       })
       .catch(() => {
@@ -103,7 +103,7 @@ export class Swampyer {
 
     this.transport!._send(MessageTypes.Goodbye, [{}, 'wamp.close.system_shutdown']);
     const deferred = deferredPromise<void>();
-    const messageListenerCleanup = this.transport!._addEventListener('message', ([messageType]) => {
+    const messageListenerCleanup = this.transport!.messageEvent.addEventListener(([messageType]) => {
       if (messageType === MessageTypes.Goodbye) {
         deferred.resolve();
       }
@@ -181,7 +181,7 @@ export class Swampyer {
     const deferred = deferredPromise<MessageData[U]>();
     this.transport!._send(requestType, requestPayload);
 
-    const messageListenerCleanup = this.transport?._addEventListener('message', ([messageType, ...data]) => {
+    const messageListenerCleanup = this.transport?.messageEvent.addEventListener(([messageType, ...data]) => {
       if (messageType === awaitMessageType && data[0] === requestId) {
         deferred.resolve(data as MessageData[U]);
         return;

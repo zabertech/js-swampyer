@@ -1,12 +1,5 @@
 import { BaseMessage, MessageTypes, MessageData } from '../types';
-import { deferredPromise, DeferredPromise } from '../utils';
-
-interface EventData {
-  message: BaseMessage;
-  open: undefined;
-  close: undefined;
-  error: Error;
-}
+import { deferredPromise, DeferredPromise, SimpleEventEmitter } from '../utils';
 
 export interface TransportProvider {
   transport: Transport;
@@ -20,12 +13,15 @@ export class Transport {
     return this.isClosed;
   }
 
-  private eventListeners: Record<keyof EventData, ((...data: unknown[]) => void)[]> = {
-    message: [],
-    open: [],
-    close: [],
-    error: [],
-  };
+  private _messageEvent = new SimpleEventEmitter<[message: BaseMessage]>();
+  private _openEvent = new SimpleEventEmitter();
+  private _closeEvent = new SimpleEventEmitter();
+  private _errorEvent = new SimpleEventEmitter<[error: Error]>();
+
+  public readonly messageEvent = this._messageEvent.protectedAccessObject;
+  public readonly openEvent = this._openEvent.protectedAccessObject;
+  public readonly closeEvent = this._closeEvent.protectedAccessObject;
+  public readonly errorEvent = this._errorEvent.protectedAccessObject;
 
   /**
    * An exception indicates that the transport has been closed and there will be no more messages
@@ -41,11 +37,11 @@ export class Transport {
   }
 
   write(payload: BaseMessage) {
-    this._dispatchEvent('message', payload);
+    this._messageEvent.emit(payload);
   }
 
   open() {
-    this._dispatchEvent('open', undefined);
+    this._openEvent.emit();
   }
 
   close(err?: Error) {
@@ -53,19 +49,9 @@ export class Transport {
       return;
     }
     this._isClosed = true;
-    err ? this._dispatchEvent('error', err) : this._dispatchEvent('close', undefined);
+    err ? this._errorEvent.emit(err) : this._closeEvent.emit();
     this.ongoingReads.forEach(deferred => deferred.reject(new Error('closed')));
     this.ongoingReads = [];
-  }
-
-  /**
-   * For use by the library
-   */
-  _addEventListener<T extends keyof EventData>(type: T, callback: (data: EventData[T]) => void) {
-    (this.eventListeners[type] as ((data: EventData[T]) => void)[]).push(callback);
-    return () => {
-      this.eventListeners[type] = this.eventListeners[type].filter(storedCallback => storedCallback !== callback)
-    }
   }
 
   /**
@@ -74,9 +60,5 @@ export class Transport {
   _send<T extends MessageTypes>(messageType: T, data: MessageData[T]) {
     this.ongoingReads.forEach(deferred => deferred.resolve([messageType, ...data]));
     this.ongoingReads = [];
-  }
-
-  private _dispatchEvent<T extends keyof EventData>(type: T, data: EventData[T]) {
-    (this.eventListeners[type] as ((data: EventData[T]) => void)[]).forEach(callback => callback(data));
   }
 }
