@@ -2,14 +2,13 @@ import type { Transport, TransportProvider } from './transports/transport';
 import {
   AuthMethod, BaseMessage, MessageData, MessageTypes, PublishOptions, RegistrationHandler, SubscriptionHandler, UnknownObject
 } from './types';
-import { generateRandomInt, deferredPromise } from './utils';
+import { generateRandomInt, deferredPromise, SimpleEventEmitter } from './utils';
 
 export interface SwampyerOptions {
   realm: string;
   authid: string;
   authmethods: AuthMethod[]
   onchallenge?: (authMethod: AuthMethod) => string;
-  onopen?: () => void;
 }
 
 export class Swampyer {
@@ -25,6 +24,12 @@ export class Swampyer {
   private registrationHandlers: { [registrationId: number]: RegistrationHandler } = {};
 
   private onCloseCleanup: (() => void)[] = [];
+
+  private _openEvent = new SimpleEventEmitter();
+  private _closeEvent = new SimpleEventEmitter<[error?: Error]>();
+
+  public readonly openEvent = this._openEvent.protectedAccessObject;
+  public readonly closeEvent = this._closeEvent.protectedAccessObject;
 
   public get isOpen() {
     return !!this.sessionId;
@@ -81,12 +86,16 @@ export class Swampyer {
     deferred.promise
       .then(() => {
         this.onCloseCleanup.push(this.transport!.messageEvent.addEventListener(this.handleEvents.bind(this)));
-        this.onCloseCleanup.push(this.transport!.errorEvent.addEventListener(() => this.resetState())); // TODO emit `close` event
-        this.onCloseCleanup.push(this.transport!.closeEvent.addEventListener(() => this.resetState())); // TODO emit `close` event
-        this.options.onopen?.();
+        this.onCloseCleanup.push(this.transport!.errorEvent.addEventListener(error => {
+          this.resetState(error)
+        }));
+        this.onCloseCleanup.push(this.transport!.closeEvent.addEventListener(() => {
+          this.resetState()
+        }));
+        this._openEvent.emit();
       })
-      .catch(() => {
-        this.resetState();
+      .catch(error => {
+        this.resetState(error);
       })
       .finally(() => {
         openListenerCleanup();
@@ -112,7 +121,6 @@ export class Swampyer {
     deferred.promise.catch(() => {}).finally(() => {
       messageListenerCleanup();
       this.resetState();
-      // TODO emit `close` event
     });
     return deferred.promise;
   }
@@ -234,7 +242,11 @@ export class Swampyer {
     }
   }
 
-  private resetState() {
+  private resetState(error?: Error) {
+    if (this.isOpen) {
+      this._closeEvent.emit(error);
+    }
+
     this.sessionId = undefined;
 
     this.onCloseCleanup.forEach(cleanupFunc => { cleanupFunc() });
