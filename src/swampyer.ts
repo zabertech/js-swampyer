@@ -200,6 +200,12 @@ export class Swampyer {
         deferred.reject({ details, error, args, kwargs });
         return;
       }
+
+      if (messageType === MessageTypes.Goodbye) {
+        const [details, reason] = data as MessageData[MessageTypes.Goodbye];
+        deferred.reject({ details, reason });
+        return;
+      }
     });
 
     deferred.promise.catch(() => {}).finally(messageListenerCleanup);
