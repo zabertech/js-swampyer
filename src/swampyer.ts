@@ -1,6 +1,6 @@
 import type { Transport, TransportProvider } from './transports/transport';
 import {
-  AuthMethod, BaseMessage, MessageData, MessageTypes, PublishOptions, RegistrationHandler, SubscriptionHandler, UnknownObject
+  AuthMethod, WampMessage, MessageData, MessageTypes, PublishOptions, RegistrationHandler, SubscriptionHandler, UnknownObject
 } from './types';
 import { generateRandomInt, deferredPromise, SimpleEventEmitter } from './utils';
 
@@ -206,7 +206,7 @@ export class Swampyer {
     return deferred.promise;
   }
 
-  private handleEvents([messageType, ...data]: BaseMessage) {
+  private handleEvents([messageType, ...data]: WampMessage) {
     switch (messageType) {
       case MessageTypes.Event: {
         const [subscriptionId, publishId, details, args, kwargs] = data as MessageData[MessageTypes.Event];

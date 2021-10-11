@@ -36,7 +36,7 @@ export enum MessageTypes {
   Yield = 70,
 }
 
-export type BaseMessage = [MessageTypes, ...unknown[]];
+export type WampMessage = [MessageTypes, ...unknown[]];
 export interface MessageData {
   [MessageTypes.Hello]: [realm: string, details: Record<string, unknown> ];
   [MessageTypes.Welcome]: [sessionId: number, details: Record<string, unknown>];

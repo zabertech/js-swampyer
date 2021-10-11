@@ -1,4 +1,4 @@
-import { BaseMessage, MessageTypes, MessageData } from '../types';
+import { WampMessage, MessageTypes, MessageData } from '../types';
 import { deferredPromise, DeferredPromise, SimpleEventEmitter } from '../utils';
 
 export interface TransportProvider {
@@ -6,14 +6,14 @@ export interface TransportProvider {
 }
 
 export class Transport {
-  private ongoingReads: DeferredPromise<BaseMessage>[] = [];
+  private ongoingReads: DeferredPromise<WampMessage>[] = [];
 
   private _isClosed = false;
   public get isClosed(): boolean {
     return this.isClosed;
   }
 
-  private _messageEvent = new SimpleEventEmitter<[message: BaseMessage]>();
+  private _messageEvent = new SimpleEventEmitter<[message: WampMessage]>();
   private _openEvent = new SimpleEventEmitter();
   private _closeEvent = new SimpleEventEmitter();
   private _errorEvent = new SimpleEventEmitter<[error: Error]>();
@@ -31,12 +31,12 @@ export class Transport {
     if (this._isClosed) {
       throw Error('closed');
     }
-    const deferred = deferredPromise<BaseMessage>();
+    const deferred = deferredPromise<WampMessage>();
     this.ongoingReads.push(deferred);
     return deferred.promise;
   }
 
-  write(payload: BaseMessage) {
+  write(payload: WampMessage) {
     this._messageEvent.emit(payload);
   }
 
