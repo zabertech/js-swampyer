@@ -15,13 +15,11 @@ export class Transport {
 
   private _messageEvent = new SimpleEventEmitter<[message: WampMessage]>();
   private _openEvent = new SimpleEventEmitter();
-  private _closeEvent = new SimpleEventEmitter();
-  private _errorEvent = new SimpleEventEmitter<[error: Error]>();
+  private _closeEvent = new SimpleEventEmitter<[error?: Error]>();
 
   public readonly messageEvent = this._messageEvent.publicObject;
   public readonly openEvent = this._openEvent.publicObject;
   public readonly closeEvent = this._closeEvent.publicObject;
-  public readonly errorEvent = this._errorEvent.publicObject;
 
   /**
    * An exception indicates that the transport has been closed and there will be no more messages
@@ -49,7 +47,7 @@ export class Transport {
       return;
     }
     this._isClosed = true;
-    err ? this._errorEvent.emit(err) : this._closeEvent.emit();
+    this._closeEvent.emit(err);
     this.ongoingReads.forEach(deferred => deferred.reject(new Error('closed')));
     this.ongoingReads = [];
   }

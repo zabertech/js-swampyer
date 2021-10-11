@@ -56,9 +56,13 @@ export class Swampyer {
       }]);
     });
 
-    const errorListenerCleanup = this.transport.errorEvent.addEventListener(() => {
+    const errorListenerCleanup = this.transport.closeEvent.addEventListener(error => {
       // TODO create the error object properly
-      deferred.reject(new Error('An error ocurred while opening the WebSocket connection'));
+      if (error) {
+        deferred.reject(new Error('An error ocurred while opening the WebSocket connection'));
+      } else {
+        deferred.reject(new Error('The transport was closed'));
+      }
     });
 
     const messageListenerCleanup = this.transport.messageEvent.addEventListener(([messageType, ...data]) => {
@@ -86,12 +90,7 @@ export class Swampyer {
     deferred.promise
       .then(() => {
         this.onCloseCleanup.push(this.transport!.messageEvent.addEventListener(this.handleEvents.bind(this)));
-        this.onCloseCleanup.push(this.transport!.errorEvent.addEventListener(error => {
-          this.resetState(error)
-        }));
-        this.onCloseCleanup.push(this.transport!.closeEvent.addEventListener(() => {
-          this.resetState()
-        }));
+        this.onCloseCleanup.push(this.transport!.closeEvent.addEventListener(error => this.resetState(error)));
         this._openEvent.emit();
       })
       .catch(error => {
