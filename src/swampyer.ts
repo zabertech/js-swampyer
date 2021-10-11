@@ -28,8 +28,8 @@ export class Swampyer {
   private _openEvent = new SimpleEventEmitter();
   private _closeEvent = new SimpleEventEmitter<[error?: Error]>();
 
-  public readonly openEvent = this._openEvent.protectedAccessObject;
-  public readonly closeEvent = this._closeEvent.protectedAccessObject;
+  public readonly openEvent = this._openEvent.publicObject;
+  public readonly closeEvent = this._closeEvent.publicObject;
 
   public get isOpen() {
     return !!this.sessionId;

@@ -21,7 +21,7 @@ export class SimpleEventEmitter<Data extends unknown[] = []> {
   private callbackId = 1;
   private callbacks: Record<number, (...args: Data) => void> = {};
 
-  public readonly protectedAccessObject = { addEventListener: this.addEventListener.bind(this) };
+  public readonly publicObject = { addEventListener: this.addEventListener.bind(this) };
 
   addEventListener(callback: (...args: Data) => void) {
     const id = this.callbackId;

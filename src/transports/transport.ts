@@ -18,10 +18,10 @@ export class Transport {
   private _closeEvent = new SimpleEventEmitter();
   private _errorEvent = new SimpleEventEmitter<[error: Error]>();
 
-  public readonly messageEvent = this._messageEvent.protectedAccessObject;
-  public readonly openEvent = this._openEvent.protectedAccessObject;
-  public readonly closeEvent = this._closeEvent.protectedAccessObject;
-  public readonly errorEvent = this._errorEvent.protectedAccessObject;
+  public readonly messageEvent = this._messageEvent.publicObject;
+  public readonly openEvent = this._openEvent.publicObject;
+  public readonly closeEvent = this._closeEvent.publicObject;
+  public readonly errorEvent = this._errorEvent.publicObject;
 
   /**
    * An exception indicates that the transport has been closed and there will be no more messages
