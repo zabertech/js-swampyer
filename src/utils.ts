@@ -36,3 +36,17 @@ export class SimpleEventEmitter<Data extends unknown[] = []> {
     Object.values(this.callbacks).forEach(callback => callback(...data));
   }
 }
+
+export async function waitUntilPass(callback: () => void, maxRetries = 100): Promise<void> {
+  for (let i = 0; i <= maxRetries; i += 1) {
+    try {
+      callback();
+      return;
+    } catch (e) {
+      if (i >= maxRetries) {
+        throw e;
+      }
+      await Promise.resolve();
+    }
+  }
+}
