@@ -1,14 +1,14 @@
 import type { Transport, TransportProvider } from './transports/transport';
 import {
-  AuthMethod, WampMessage, MessageData, MessageTypes, PublishOptions, RegistrationHandler, SubscriptionHandler, UnknownObject
+  WampMessage, MessageData, MessageTypes, PublishOptions, RegistrationHandler, SubscriptionHandler, UnknownObject
 } from './types';
 import { generateRandomInt, deferredPromise, SimpleEventEmitter } from './utils';
 
 export interface SwampyerOptions {
   realm: string;
   authid: string;
-  authmethods: AuthMethod[]
-  onchallenge?: (authMethod: AuthMethod) => string;
+  authmethods: string[]
+  onchallenge?: (authMethod: string) => string;
 }
 
 export class Swampyer {
@@ -52,17 +52,12 @@ export class Swampyer {
         authid: this.options.authid,
         agent: 'swampyer-js',
         authmethods: this.options.authmethods || ['anonymous'],
-        roles: {subscriber: {}, publisher: {}, caller: {}, callee: {}}
+        roles: {subscriber: {}, publisher: {}, caller: {}, callee: {}},
       }]);
     });
 
     const errorListenerCleanup = this.transport.closeEvent.addEventListener(error => {
-      // TODO create the error object properly
-      if (error) {
-        deferred.reject(new Error('An error ocurred while opening the WebSocket connection'));
-      } else {
-        deferred.reject(new Error('The transport was closed'));
-      }
+      deferred.reject(error || new Error('The transport was closed'))
     });
 
     const messageListenerCleanup = this.transport.messageEvent.addEventListener(([messageType, ...data]) => {

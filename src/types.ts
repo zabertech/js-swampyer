@@ -1,12 +1,6 @@
 // TODO make sure that all usage of this type is justified
 export type UnknownObject = Record<string | number | symbol, unknown>;
 
-export enum AuthMethod {
-  Cookie = 'cookie',
-  Ticket = 'ticket',
-  Anonymous = 'anonymous',
-}
-
 export enum MessageTypes {
   Hello = 1,
   Welcome = 2,
@@ -41,7 +35,7 @@ export interface MessageData {
   [MessageTypes.Hello]: [realm: string, details: Record<string, unknown> ];
   [MessageTypes.Welcome]: [sessionId: number, details: Record<string, unknown>];
   [MessageTypes.Abort]: [details: UnknownObject, reason: string];
-  [MessageTypes.Challenge]: [authMethod: AuthMethod, extra: Record<string, unknown>];
+  [MessageTypes.Challenge]: [authMethod: string, extra: Record<string, unknown>];
   [MessageTypes.Authenticate]: [signature: string, extra: Record<string, unknown>];
   [MessageTypes.Goodbye]: [details: UnknownObject, reason: string];
   [MessageTypes.Error]: [
