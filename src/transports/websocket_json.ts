@@ -23,10 +23,10 @@ export class WebsocketJsonTransport implements TransportProvider {
   private async readLoop() {
     try {
       while (true) {
-        this.socket?.send(JSON.stringify(await this.transport.read()));
+        this.socket!.send(JSON.stringify(await this.transport.read()));
       }
     } catch (e) {
-      this.socket?.close();
+      this.socket!.close();
     }
   }
 }
