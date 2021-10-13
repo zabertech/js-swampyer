@@ -6,9 +6,33 @@ import { generateRandomInt, deferredPromise, SimpleEventEmitter } from './utils'
 
 export interface SwampyerOptions {
   realm: string;
-  authid: string;
-  authmethods: string[]
-  onchallenge?: (authMethod: string) => string;
+  /**
+   * Optional authentication data
+   * 
+   * If this is not defined then the library will try to authenticate using the `anonymous`
+   * `authMethod`
+   */
+  auth?: {
+    /**
+     * The username or ID to authenticate as.
+     * 
+     * This value depends on the `authMethods` selected and the settings of your WAMP server.
+     */
+    authId: string;
+    /**
+     * Could be values like `anonymous`, `ticket`, `cookie`, etc.
+     * 
+     * Refer to your WAMP server's settings to find out which auth methods are supported.
+     */
+    authMethods: string[];
+    /**
+     * Handle authentication challenge from the WAMP server.
+     * 
+     * Depending on the auth method requested by the server, this could return things like the
+     * password of the user we are trying to authenticate as.
+     */
+    onChallenge: (authMethod: string) => string;
+  }
 }
 
 export class Swampyer {
@@ -49,9 +73,9 @@ export class Swampyer {
 
     const openListenerCleanup = this.transport.openEvent.addEventListener(() => {
       this.transport!._send(MessageTypes.Hello, [this.options.realm, {
-        authid: this.options.authid,
+        authid: this.options.auth?.authId,
         agent: 'swampyer-js',
-        authmethods: this.options.authmethods || ['anonymous'],
+        authmethods: this.options.auth?.authMethods || ['anonymous'],
         roles: {subscriber: {}, publisher: {}, caller: {}, callee: {}},
       }]);
     });
@@ -75,8 +99,21 @@ export class Swampyer {
         }
         case MessageTypes.Challenge: {
           const [authMethod] = data as MessageData[MessageTypes.Challenge];
-          const authData = this.options.onchallenge?.(authMethod) ?? '';
-          this.transport!._send(MessageTypes.Authenticate, [authData, {}]);
+          const errorReason = 'wamp.error.cannot_authenticate';
+          if (this.options.auth?.onChallenge) {
+            try {
+              const authData = this.options.auth.onChallenge(authMethod);
+              this.transport!._send(MessageTypes.Authenticate, [authData, {}]);
+            } catch (e) {
+              const details = { message: 'An exception occured in onChallenge handler' };
+              this.transport!._send(MessageTypes.Abort, [details, errorReason]);
+              deferred.reject({ details, reason: errorReason });
+            }
+          } else {
+            const details = { message: 'An onChallenge handler is not defined' };
+            this.transport!._send(MessageTypes.Abort, [details, errorReason]);
+            deferred.reject({ details, reason: errorReason });
+          }
           break;
         }
       }
