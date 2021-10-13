@@ -22,6 +22,7 @@ build_linux_64:
 publish_gitlab:
   stage: publish
   interruptible: true
+  when: manual
   script:
     - echo "@${CI_PROJECT_ROOT_NAMESPACE}:registry=https://gitlab.izaber.com/api/v4/projects/${CI_PROJECT_ID}/packages/npm/" > .npmrc
     - echo "//gitlab.izaber.com/api/v4/projects/${CI_PROJECT_ID}/packages/npm/:_authToken=${CI_JOB_TOKEN}" >> .npmrc
@@ -30,9 +31,9 @@ publish_gitlab:
     - rm package.json
     - mv package.json.new package.json
     - npm version "0.0.${CI_PIPELINE_IID}" --no-git-tag-version
-    - npm publish
+    #- npm publish
   tags:
   - linux-64
   - node
   only:
-  - /^(master|test|8773.*)$/i
+  - /^(master|test)$/i
