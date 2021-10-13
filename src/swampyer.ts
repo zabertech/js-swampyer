@@ -1,6 +1,6 @@
 import type { Transport, TransportProvider } from './transports/transport';
 import {
-  WampMessage, MessageData, MessageTypes, PublishOptions, RegistrationHandler, SubscriptionHandler, UnknownObject
+  WampMessage, MessageData, MessageTypes, PublishOptions, RegistrationHandler, SubscriptionHandler, UnknownObject, WelcomeDetails
 } from './types';
 import { generateRandomInt, deferredPromise, SimpleEventEmitter } from './utils';
 
@@ -49,7 +49,7 @@ export class Swampyer {
 
   private onCloseCleanup: (() => void)[] = [];
 
-  private _openEvent = new SimpleEventEmitter();
+  private _openEvent = new SimpleEventEmitter<[WelcomeDetails]>();
   private _closeEvent = new SimpleEventEmitter<[error?: Error]>();
 
   public readonly openEvent = this._openEvent.publicObject;
@@ -61,7 +61,7 @@ export class Swampyer {
 
   constructor(private readonly options: SwampyerOptions) {}
 
-  async open(transportProvider: TransportProvider): Promise<void> {
+  async open(transportProvider: TransportProvider): Promise<WelcomeDetails> {
     if (this.isOpen) {
       throw Error('The connection is already open');
     } else if (this.transport) {
@@ -69,7 +69,7 @@ export class Swampyer {
     }
 
     this.transport = transportProvider.transport;
-    const deferred = deferredPromise<void>();
+    const deferred = deferredPromise<WelcomeDetails>();
 
     const openListenerCleanup = this.transport.openEvent.addEventListener(() => {
       this.transport!._send(MessageTypes.Hello, [this.options.realm, {
@@ -87,9 +87,9 @@ export class Swampyer {
     const messageListenerCleanup = this.transport.messageEvent.addEventListener(([messageType, ...data]) => {
       switch (messageType) {
         case MessageTypes.Welcome: {
-          const [sessionId] = data as MessageData[MessageTypes.Welcome];
+          const [sessionId, details] = data as MessageData[MessageTypes.Welcome];
           this.sessionId = sessionId;
-          deferred.resolve();
+          deferred.resolve(details);
           break;
         }
         case MessageTypes.Abort: {
@@ -122,10 +122,10 @@ export class Swampyer {
     transportProvider.open();
 
     deferred.promise
-      .then(() => {
+      .then(details => {
         this.onCloseCleanup.push(this.transport!.messageEvent.addEventListener(this.handleEvents.bind(this)));
         this.onCloseCleanup.push(this.transport!.closeEvent.addEventListener(error => this.resetState(error)));
-        this._openEvent.emit();
+        this._openEvent.emit(details);
       })
       .catch(error => {
         this.resetState(error);

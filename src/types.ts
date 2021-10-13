@@ -33,7 +33,7 @@ export enum MessageTypes {
 export type WampMessage = [MessageTypes, ...unknown[]];
 export interface MessageData {
   [MessageTypes.Hello]: [realm: string, details: Record<string, unknown> ];
-  [MessageTypes.Welcome]: [sessionId: number, details: Record<string, unknown>];
+  [MessageTypes.Welcome]: [sessionId: number, details: WelcomeDetails];
   [MessageTypes.Abort]: [details: UnknownObject, reason: string];
   [MessageTypes.Challenge]: [authMethod: string, extra: Record<string, unknown>];
   [MessageTypes.Authenticate]: [signature: string, extra: Record<string, unknown>];
@@ -58,6 +58,15 @@ export interface MessageData {
   [MessageTypes.Invocation]: [requestId: number, registrationId: number, details: UnknownObject, args: unknown[], kwargs: UnknownObject];
   [MessageTypes.Yield]: [requestId: number, options: UnknownObject, args: unknown[], kwargs: UnknownObject];
   // TODO properly define the unknown[] types
+}
+
+export type WelcomeDetails = {
+  authid: string;
+  authrole: string;
+  authmethod: string;
+  roles: Record<string, unknown>;
+  authprovider?: string;
+  realm?: string;
 }
 
 export type SubscriptionHandler = (args: unknown[], kwargs: UnknownObject) => void;
