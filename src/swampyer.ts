@@ -138,12 +138,12 @@ export class Swampyer {
     return deferred.promise;
   }
 
-  async close(): Promise<void> {
+  async close(reason = 'wamp.close.system_shutdown', message?: string): Promise<void> {
     if (!this.isOpen) {
       throw Error('The connection is not open and can not be closed');
     }
 
-    this.transport!._send(MessageTypes.Goodbye, [{}, 'wamp.close.system_shutdown']);
+    this.transport!._send(MessageTypes.Goodbye, [message ? { message } : {}, reason]);
     const deferred = deferredPromise<void>();
     const messageListenerCleanup = this.transport!.messageEvent.addEventListener(([messageType]) => {
       if (messageType === MessageTypes.Goodbye) {
