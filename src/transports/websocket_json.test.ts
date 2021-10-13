@@ -1,4 +1,4 @@
-import { WebsocketJsonTransport } from './websocket_json';
+import { WebsocketJson } from './websocket_json';
 
 let ws: MockWebSocket;
 let constructorArgs: unknown[];
@@ -24,13 +24,13 @@ afterEach(() => {
 });
 
 it('opens the websocket connection with the expected arguments', async () => {
-  const provider = new WebsocketJsonTransport('ws://something/ws');
+  const provider = new WebsocketJson('ws://something/ws');
   provider.open();
   expect(constructorArgs).toEqual(['ws://something/ws', ['wamp.2.json']]);
 });
 
 it('parses data from the socket as JSON and sends it along to the underlying transport', async () => {
-  const provider = new WebsocketJsonTransport('');
+  const provider = new WebsocketJson('');
   const eventHandler = jest.fn();
   provider.transport.messageEvent.addEventListener(data => eventHandler(data));
   provider.open();
@@ -42,7 +42,7 @@ it('parses data from the socket as JSON and sends it along to the underlying tra
 });
 
 it('informs the underlying transport when the websocket connection opens', async () => {
-  const provider = new WebsocketJsonTransport('');
+  const provider = new WebsocketJson('');
   const eventHandler = jest.fn();
   provider.transport.openEvent.addEventListener(() => eventHandler());
   provider.open();
@@ -53,7 +53,7 @@ it('informs the underlying transport when the websocket connection opens', async
 });
 
 it('informs the underlying transport when the websocket connection closes', async () => {
-  const provider = new WebsocketJsonTransport('');
+  const provider = new WebsocketJson('');
   const eventHandler = jest.fn();
   provider.transport.closeEvent.addEventListener(err => eventHandler(err));
   provider.open();
@@ -65,7 +65,7 @@ it('informs the underlying transport when the websocket connection closes', asyn
 });
 
 it('informs the underlying transport when the websocket connection closes with an error', async () => {
-  const provider = new WebsocketJsonTransport('');
+  const provider = new WebsocketJson('');
   const eventHandler = jest.fn();
   provider.transport.closeEvent.addEventListener(err => eventHandler(err));
   provider.open();

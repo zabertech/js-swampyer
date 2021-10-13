@@ -1,6 +1,6 @@
 import { Transport, TransportProvider } from './transport';
 
-export class WebsocketJsonTransport implements TransportProvider {
+export class WebsocketJson implements TransportProvider {
   private socket?: WebSocket;
 
   public readonly transport: Transport;
