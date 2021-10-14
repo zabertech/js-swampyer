@@ -1,39 +1,9 @@
 import type { Transport, TransportProvider } from './transports/transport';
 import {
-  WampMessage, MessageData, MessageTypes, PublishOptions, RegistrationHandler, SubscriptionHandler, UnknownObject, WelcomeDetails
+  WampMessage, MessageData, MessageTypes, PublishOptions, RegistrationHandler, SubscriptionHandler, UnknownObject, WelcomeDetails,
+  OpenOptions
 } from './types';
 import { generateRandomInt, deferredPromise, SimpleEventEmitter } from './utils';
-
-export interface SwampyerOptions {
-  realm: string;
-  /**
-   * Optional authentication data
-   * 
-   * If this is not defined then the library will try to authenticate using the `anonymous`
-   * `authMethod`
-   */
-  auth?: {
-    /**
-     * The username or ID to authenticate as.
-     * 
-     * This value depends on the `authMethods` selected and the settings of your WAMP server.
-     */
-    authId: string;
-    /**
-     * Could be values like `anonymous`, `ticket`, `cookie`, etc.
-     * 
-     * Refer to your WAMP server's settings to find out which auth methods are supported.
-     */
-    authMethods: string[];
-    /**
-     * Handle authentication challenge from the WAMP server.
-     * 
-     * Depending on the auth method requested by the server, this could return things like the
-     * password of the user we are trying to authenticate as.
-     */
-    onChallenge: (authMethod: string) => string;
-  }
-}
 
 export class Swampyer {
   private transport: Transport | undefined;
@@ -59,9 +29,7 @@ export class Swampyer {
     return !!this.sessionId;
   }
 
-  constructor(private readonly options: SwampyerOptions) {}
-
-  async open(transportProvider: TransportProvider): Promise<WelcomeDetails> {
+  async open(transportProvider: TransportProvider, options: OpenOptions): Promise<WelcomeDetails> {
     if (this.isOpen) {
       throw Error('The connection is already open');
     } else if (this.transport) {
@@ -72,10 +40,10 @@ export class Swampyer {
     const deferred = deferredPromise<WelcomeDetails>();
 
     const openListenerCleanup = this.transport.openEvent.addEventListener(() => {
-      this.transport!._send(MessageTypes.Hello, [this.options.realm, {
-        authid: this.options.auth?.authId,
+      this.transport!._send(MessageTypes.Hello, [options.realm, {
+        authid: options.auth?.authId,
         agent: 'swampyer-js',
-        authmethods: this.options.auth?.authMethods || ['anonymous'],
+        authmethods: options.auth?.authMethods || ['anonymous'],
         roles: {subscriber: {}, publisher: {}, caller: {}, callee: {}},
       }]);
     });
@@ -100,9 +68,9 @@ export class Swampyer {
         case MessageTypes.Challenge: {
           const [authMethod] = data as MessageData[MessageTypes.Challenge];
           const errorReason = 'wamp.error.cannot_authenticate';
-          if (this.options.auth?.onChallenge) {
+          if (options.auth?.onChallenge) {
             try {
-              const authData = this.options.auth.onChallenge(authMethod);
+              const authData = options.auth.onChallenge(authMethod);
               this.transport!._send(MessageTypes.Authenticate, [authData, {}]);
             } catch (e) {
               const details = { message: 'An exception occured in onChallenge handler' };
