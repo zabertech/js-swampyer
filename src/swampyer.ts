@@ -42,7 +42,7 @@ export class Swampyer {
     const openListenerCleanup = this.transport.openEvent.addEventListener(() => {
       this.transport!._send(MessageTypes.Hello, [options.realm, {
         authid: options.auth?.authId,
-        agent: 'swampyer-js',
+        agent: options.agent || 'swampyer-js',
         authmethods: options.auth?.authMethods || ['anonymous'],
         roles: {subscriber: {}, publisher: {}, caller: {}, callee: {}},
       }]);

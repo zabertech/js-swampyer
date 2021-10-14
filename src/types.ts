@@ -60,6 +60,9 @@ export interface MessageData {
   // TODO properly define the unknown[] types
 }
 
+export type SubscriptionHandler = (args: unknown[], kwargs: UnknownObject) => void;
+export type RegistrationHandler = (args: unknown[], kwargs: UnknownObject) => void;
+
 export type WelcomeDetails = {
   authid: string;
   authrole: string;
@@ -69,11 +72,13 @@ export type WelcomeDetails = {
   realm?: string;
 }
 
-export type SubscriptionHandler = (args: unknown[], kwargs: UnknownObject) => void;
-export type RegistrationHandler = (args: unknown[], kwargs: UnknownObject) => void;
-
 export interface OpenOptions {
   realm: string;
+  /**
+   * An identifier for this client connection which may be used by the WAMP server for logging
+   * purposes
+   */
+  agent?: string;
   /**
    * Optional authentication data
    * 
@@ -104,5 +109,9 @@ export interface OpenOptions {
 }
 
 export interface PublishOptions {
+  /**
+   * Asks the WAMP server to acknowledge that the publish call has been fulfilled. `publish()`
+   * will wait for the acknowledgement from the WAMP server if this option is set to `true`.
+   */
   acknowledge?: boolean;
 }
