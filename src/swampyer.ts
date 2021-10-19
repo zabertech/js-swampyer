@@ -1,15 +1,9 @@
 import type { Transport, TransportProvider } from './transports/transport';
 import {
-  WampMessage, MessageData, MessageTypes, PublishOptions, RegistrationHandler, SubscriptionHandler, UnknownObject
+  WampMessage, MessageData, MessageTypes, PublishOptions, RegistrationHandler, SubscriptionHandler, UnknownObject, WelcomeDetails,
+  OpenOptions
 } from './types';
 import { generateRandomInt, deferredPromise, SimpleEventEmitter } from './utils';
-
-export interface SwampyerOptions {
-  realm: string;
-  authid: string;
-  authmethods: string[]
-  onchallenge?: (authMethod: string) => string;
-}
 
 export class Swampyer {
   private transport: Transport | undefined;
@@ -25,7 +19,7 @@ export class Swampyer {
 
   private onCloseCleanup: (() => void)[] = [];
 
-  private _openEvent = new SimpleEventEmitter();
+  private _openEvent = new SimpleEventEmitter<[WelcomeDetails]>();
   private _closeEvent = new SimpleEventEmitter<[error?: Error]>();
 
   public readonly openEvent = this._openEvent.publicObject;
@@ -35,9 +29,7 @@ export class Swampyer {
     return !!this.sessionId;
   }
 
-  constructor(private readonly options: SwampyerOptions) {}
-
-  async open(transportProvider: TransportProvider): Promise<void> {
+  async open(transportProvider: TransportProvider, options: OpenOptions): Promise<WelcomeDetails> {
     if (this.isOpen) {
       throw Error('The connection is already open');
     } else if (this.transport) {
@@ -45,13 +37,13 @@ export class Swampyer {
     }
 
     this.transport = transportProvider.transport;
-    const deferred = deferredPromise<void>();
+    const deferred = deferredPromise<WelcomeDetails>();
 
     const openListenerCleanup = this.transport.openEvent.addEventListener(() => {
-      this.transport!._send(MessageTypes.Hello, [this.options.realm, {
-        authid: this.options.authid,
-        agent: 'swampyer-js',
-        authmethods: this.options.authmethods || ['anonymous'],
+      this.transport!._send(MessageTypes.Hello, [options.realm, {
+        authid: options.auth?.authId,
+        agent: options.agent || 'swampyer-js',
+        authmethods: options.auth?.authMethods || ['anonymous'],
         roles: {subscriber: {}, publisher: {}, caller: {}, callee: {}},
       }]);
     });
@@ -63,9 +55,9 @@ export class Swampyer {
     const messageListenerCleanup = this.transport.messageEvent.addEventListener(([messageType, ...data]) => {
       switch (messageType) {
         case MessageTypes.Welcome: {
-          const [sessionId] = data as MessageData[MessageTypes.Welcome];
+          const [sessionId, details] = data as MessageData[MessageTypes.Welcome];
           this.sessionId = sessionId;
-          deferred.resolve();
+          deferred.resolve(details);
           break;
         }
         case MessageTypes.Abort: {
@@ -75,8 +67,21 @@ export class Swampyer {
         }
         case MessageTypes.Challenge: {
           const [authMethod] = data as MessageData[MessageTypes.Challenge];
-          const authData = this.options.onchallenge?.(authMethod) ?? '';
-          this.transport!._send(MessageTypes.Authenticate, [authData, {}]);
+          const errorReason = 'wamp.error.cannot_authenticate';
+          if (options.auth?.onChallenge) {
+            try {
+              const authData = options.auth.onChallenge(authMethod);
+              this.transport!._send(MessageTypes.Authenticate, [authData, {}]);
+            } catch (e) {
+              const details = { message: 'An exception occured in onChallenge handler' };
+              this.transport!._send(MessageTypes.Abort, [details, errorReason]);
+              deferred.reject({ details, reason: errorReason });
+            }
+          } else {
+            const details = { message: 'An onChallenge handler is not defined' };
+            this.transport!._send(MessageTypes.Abort, [details, errorReason]);
+            deferred.reject({ details, reason: errorReason });
+          }
           break;
         }
       }
@@ -85,10 +90,10 @@ export class Swampyer {
     transportProvider.open();
 
     deferred.promise
-      .then(() => {
+      .then(details => {
         this.onCloseCleanup.push(this.transport!.messageEvent.addEventListener(this.handleEvents.bind(this)));
         this.onCloseCleanup.push(this.transport!.closeEvent.addEventListener(error => this.resetState(error)));
-        this._openEvent.emit();
+        this._openEvent.emit(details);
       })
       .catch(error => {
         this.resetState(error);
@@ -101,12 +106,12 @@ export class Swampyer {
     return deferred.promise;
   }
 
-  async close(): Promise<void> {
+  async close(reason = 'wamp.close.system_shutdown', message?: string): Promise<void> {
     if (!this.isOpen) {
       throw Error('The connection is not open and can not be closed');
     }
 
-    this.transport!._send(MessageTypes.Goodbye, [{}, 'wamp.close.system_shutdown']);
+    this.transport!._send(MessageTypes.Goodbye, [message ? { message } : {}, reason]);
     const deferred = deferredPromise<void>();
     const messageListenerCleanup = this.transport!.messageEvent.addEventListener(([messageType]) => {
       if (messageType === MessageTypes.Goodbye) {

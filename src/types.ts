@@ -33,7 +33,7 @@ export enum MessageTypes {
 export type WampMessage = [MessageTypes, ...unknown[]];
 export interface MessageData {
   [MessageTypes.Hello]: [realm: string, details: Record<string, unknown> ];
-  [MessageTypes.Welcome]: [sessionId: number, details: Record<string, unknown>];
+  [MessageTypes.Welcome]: [sessionId: number, details: WelcomeDetails];
   [MessageTypes.Abort]: [details: UnknownObject, reason: string];
   [MessageTypes.Challenge]: [authMethod: string, extra: Record<string, unknown>];
   [MessageTypes.Authenticate]: [signature: string, extra: Record<string, unknown>];
@@ -63,6 +63,55 @@ export interface MessageData {
 export type SubscriptionHandler = (args: unknown[], kwargs: UnknownObject) => void;
 export type RegistrationHandler = (args: unknown[], kwargs: UnknownObject) => void;
 
+export type WelcomeDetails = {
+  authid: string;
+  authrole: string;
+  authmethod: string;
+  roles: Record<string, unknown>;
+  authprovider?: string;
+  realm?: string;
+}
+
+export interface OpenOptions {
+  realm: string;
+  /**
+   * An identifier for this client connection which may be used by the WAMP server for logging
+   * purposes
+   */
+  agent?: string;
+  /**
+   * Optional authentication data
+   * 
+   * If this is not defined then the library will try to authenticate using the `anonymous`
+   * `authMethod`. Omit this if you only need `anonymous` access.
+   */
+  auth?: {
+    /**
+     * The username or ID to authenticate as.
+     * 
+     * This value depends on the `authMethods` selected and the settings of your WAMP server.
+     */
+    authId: string;
+    /**
+     * Could be values like `anonymous`, `ticket`, `cookie`, etc.
+     * 
+     * Refer to your WAMP server's settings to find out which auth methods are supported.
+     */
+    authMethods: string[];
+    /**
+     * Handle authentication challenge from the WAMP server.
+     * 
+     * Depending on the auth method requested by the server, this could return things like the
+     * password of the user we are trying to authenticate as.
+     */
+    onChallenge: (authMethod: string) => string;
+  }
+}
+
 export interface PublishOptions {
+  /**
+   * Asks the WAMP server to acknowledge that the publish call has been fulfilled. `publish()`
+   * will wait for the acknowledgement from the WAMP server if this option is set to `true`.
+   */
   acknowledge?: boolean;
 }

@@ -1,1 +1,2 @@
-export { Swampyer, SwampyerOptions } from './swampyer';
+export { Swampyer } from './swampyer';
+export type { OpenOptions, PublishOptions, WelcomeDetails } from './types';
