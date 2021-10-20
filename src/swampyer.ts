@@ -1,6 +1,6 @@
 import type { Transport, TransportProvider } from './transports/transport';
 import {
-  WampMessage, MessageData, MessageTypes, PublishOptions, RegistrationHandler, SubscriptionHandler, UnknownObject, WelcomeDetails,
+  WampMessage, MessageData, MessageTypes, PublishOptions, RegistrationHandler, SubscriptionHandler, WelcomeDetails,
   OpenOptions
 } from './types';
 import { generateRandomInt, deferredPromise, SimpleEventEmitter } from './utils';
@@ -143,7 +143,7 @@ export class Swampyer {
     delete this.registrationHandlers[registrationId];
   }
 
-  async call(uri: string, args: unknown[] = [], kwargs: UnknownObject = {}): Promise<unknown> {
+  async call(uri: string, args: unknown[] = [], kwargs: Object = {}): Promise<unknown> {
     this.throwIfNotOpen();
     const requestId = this.callRequestId;
     this.callRequestId += 1;
@@ -166,7 +166,7 @@ export class Swampyer {
     delete this.subscriptionHandlers[subscriptionId];
   }
 
-  async publish(uri: string, args: unknown[] = [], kwargs: UnknownObject = {}, options: PublishOptions = {}): Promise<void> {
+  async publish(uri: string, args: unknown[] = [], kwargs: Object = {}, options: PublishOptions = {}): Promise<void> {
     this.throwIfNotOpen();
     const requestId = this.publishRequestId;
     this.publishRequestId += 1;
@@ -217,7 +217,7 @@ export class Swampyer {
     switch (messageType) {
       case MessageTypes.Event: {
         const [subscriptionId, publishId, details, args, kwargs] = data as MessageData[MessageTypes.Event];
-        this.subscriptionHandlers[subscriptionId]?.(args, kwargs);
+        this.subscriptionHandlers[subscriptionId]?.(args, kwargs, details);
         break;
       }
       case MessageTypes.Invocation: {
@@ -230,7 +230,7 @@ export class Swampyer {
           );
         } else {
           try {
-            const result = handler(args, kwargs);
+            const result = handler(args, kwargs, details);
             this.transport!._send(MessageTypes.Yield, [requestId, {}, [result], {}]);
           } catch (e) {
             this.transport!._send(MessageTypes.Error, [MessageTypes.Invocation, requestId, {}, 'error.invoke.failed', [e], {}])

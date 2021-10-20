@@ -1,5 +1,4 @@
 // TODO make sure that all usage of this type is justified
-export type UnknownObject = Record<string | number | symbol, unknown>;
 
 export enum MessageTypes {
   Hello = 1,
@@ -34,34 +33,34 @@ export type WampMessage = [MessageTypes, ...unknown[]];
 export interface MessageData {
   [MessageTypes.Hello]: [realm: string, details: Record<string, unknown> ];
   [MessageTypes.Welcome]: [sessionId: number, details: WelcomeDetails];
-  [MessageTypes.Abort]: [details: UnknownObject, reason: string];
+  [MessageTypes.Abort]: [details: Object, reason: string];
   [MessageTypes.Challenge]: [authMethod: string, extra: Record<string, unknown>];
   [MessageTypes.Authenticate]: [signature: string, extra: Record<string, unknown>];
-  [MessageTypes.Goodbye]: [details: UnknownObject, reason: string];
+  [MessageTypes.Goodbye]: [details: Object, reason: string];
   [MessageTypes.Error]: [
-    requestMessageType: MessageTypes, requestId: number, details: UnknownObject, error: string,
-    args: unknown[], kwargs: UnknownObject
+    requestMessageType: MessageTypes, requestId: number, details: Object, error: string,
+    args: unknown[], kwargs: Object
   ];
-  [MessageTypes.Publish]: [requestId: number, options: PublishOptions, topic: string, args: unknown[], kwargs: UnknownObject];
+  [MessageTypes.Publish]: [requestId: number, options: PublishOptions, topic: string, args: unknown[], kwargs: Object];
   [MessageTypes.Published]: [requestId: number, publicationId: number];
-  [MessageTypes.Subscribe]: [requestId: number, options: UnknownObject, topic: string];
+  [MessageTypes.Subscribe]: [requestId: number, options: Object, topic: string];
   [MessageTypes.Subscribed]: [requestId: number, subscriptionId: number];
   [MessageTypes.Unsubscribe]: [requestId: number, subscriptionId: number];
   [MessageTypes.Unsubscribed]: [requestId: number];
-  [MessageTypes.Event]: [subscriptionId: number, publishId: number, details: UnknownObject, args: unknown[], kwargs: UnknownObject];
-  [MessageTypes.Call]: [requestId: number, options: UnknownObject, procedure: string, args: unknown[], kwargs: UnknownObject];
-  [MessageTypes.Result]: [requestId: number, details: UnknownObject, resultArray: unknown[], resultObj: UnknownObject];
-  [MessageTypes.Register]: [requestId: number, details: UnknownObject, procedure: string];
+  [MessageTypes.Event]: [subscriptionId: number, publishId: number, details: Object, args: unknown[], kwargs: Object];
+  [MessageTypes.Call]: [requestId: number, options: Object, procedure: string, args: unknown[], kwargs: Object];
+  [MessageTypes.Result]: [requestId: number, details: Object, resultArray: unknown[], resultObj: Object];
+  [MessageTypes.Register]: [requestId: number, details: Object, procedure: string];
   [MessageTypes.Registered]: [requestId: number, registrationId: number];
   [MessageTypes.Unregister]: [requestId: number, registrationId: number];
   [MessageTypes.Unregistered]: [requestId: number];
-  [MessageTypes.Invocation]: [requestId: number, registrationId: number, details: UnknownObject, args: unknown[], kwargs: UnknownObject];
-  [MessageTypes.Yield]: [requestId: number, options: UnknownObject, args: unknown[], kwargs: UnknownObject];
+  [MessageTypes.Invocation]: [requestId: number, registrationId: number, details: Object, args: unknown[], kwargs: Object];
+  [MessageTypes.Yield]: [requestId: number, options: Object, args: unknown[], kwargs: Object];
   // TODO properly define the unknown[] types
 }
 
-export type SubscriptionHandler = (args: unknown[], kwargs: UnknownObject) => void;
-export type RegistrationHandler = (args: unknown[], kwargs: UnknownObject) => void;
+export type SubscriptionHandler = (args: unknown[], kwargs: Object, details: Object) => void;
+export type RegistrationHandler = (args: unknown[], kwargs: Object, details: Object) => void;
 
 export type WelcomeDetails = {
   authid: string;
