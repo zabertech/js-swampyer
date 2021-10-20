@@ -173,9 +173,9 @@ export class Swampyer {
 
     const payload: MessageData[MessageTypes.Publish] = [requestId, options, uri, args, kwargs];
     if (options.acknowledge) {
-      this.transport!._send(MessageTypes.Publish, payload);
-    } else {
       await this.sendRequest(MessageTypes.Publish, payload, MessageTypes.Published)
+    } else {
+      this.transport!._send(MessageTypes.Publish, payload);
     }
   }
 
