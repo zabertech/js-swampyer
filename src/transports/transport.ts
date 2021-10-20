@@ -8,6 +8,7 @@ export interface TransportProvider {
 
 export class Transport {
   private ongoingReads: DeferredPromise<WampMessage>[] = [];
+  private sendQueue: WampMessage[] = [];
 
   private _isClosed = false;
   public get isClosed(): boolean {
@@ -29,6 +30,9 @@ export class Transport {
   async read() {
     if (this._isClosed) {
       throw Error('closed');
+    }
+    if (this.sendQueue.length) {
+      return this.sendQueue.shift();
     }
     const deferred = deferredPromise<WampMessage>();
     this.ongoingReads.push(deferred);
@@ -57,7 +61,12 @@ export class Transport {
    * For use by the library
    */
   _send<T extends MessageTypes>(messageType: T, data: MessageData[T]) {
-    this.ongoingReads.forEach(deferred => deferred.resolve([messageType, ...data]));
-    this.ongoingReads = [];
+    const message: WampMessage = [messageType, ...data];
+    if (this.ongoingReads.length) {
+      this.ongoingReads.forEach(deferred => deferred.resolve(message));
+      this.ongoingReads = [];
+    } else {
+      this.sendQueue.push(message);
+    }
   }
 }
