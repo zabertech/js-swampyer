@@ -26,6 +26,18 @@ describe('Transport', () => {
       expect(onRead).toBeCalledWith([0, 'test']);
     });
 
+    it('queues messages if nothing is waiting on a "read()". The next "read()" gives queued message in FIFO way', async () => {
+      const transport = new Transport();
+
+      transport._send(0, ['test 1']);
+      expect(await transport.read()).toEqual([0, 'test 1']);
+
+      transport._send(0, ['test 2']);
+      transport._send(0, ['test 3']);
+      expect(await transport.read()).toEqual([0, 'test 2']);
+      expect(await transport.read()).toEqual([0, 'test 3']);
+    });
+
     it('throws an error if the transport is already closed', async () => {
       const transport = new Transport();
       transport.close();
