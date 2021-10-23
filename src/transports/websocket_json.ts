@@ -3,11 +3,9 @@ import { Transport, TransportProvider } from './transport';
 export class WebsocketJson implements TransportProvider {
   private socket?: WebSocket;
 
-  public readonly transport: Transport;
+  public readonly transport: Transport = new Transport();
 
-  constructor(private url: string | URL) {
-    this.transport = new Transport();
-  }
+  constructor(private url: string | URL) { }
 
   open() {
     this.socket = new WebSocket(this.url, ['wamp.2.json']);
