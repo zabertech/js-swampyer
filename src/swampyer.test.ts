@@ -1,4 +1,45 @@
 import { Swampyer } from './swampyer';
+import { Transport, TransportProvider } from './transports/transport';
+import { MessageData, MessageTypes, WampMessage } from './types';
+
+class MockTransportProvider implements TransportProvider {
+  transport = new Transport();
+  messages: { type: 'toLib' | 'fromLib', message: WampMessage }[] = [];
+  readLoopIsRunning = true;
+
+  open() {
+    this.readLoop();
+  }
+
+  sendToLib<T extends MessageTypes>(messageType: T, data: MessageData[T]) {
+    this.transport.write([messageType, ...data]);
+  }
+
+  private async readLoop() {
+    try {
+      while (true) {
+        this.messages.push({
+          type: 'fromLib',
+          message: await this.transport.read()
+        });
+      }
+    } catch (e) {
+      this.readLoopIsRunning = false;
+    }
+  }
+}
+
+let transportProvider: MockTransportProvider;
+let wamp: Swampyer;
+
+beforeEach(() => {
+  transportProvider = new MockTransportProvider();
+});
+
+afterEach(() => {
+  transportProvider = null!;
+  wamp = null!;
+});
 
 describe('open()', () => {
   it('can establish an unauthenticated WAMP connection if no auth data is provided', async () => {});
