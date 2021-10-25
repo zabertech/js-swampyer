@@ -403,6 +403,13 @@ describe('misc event handling', () => {
     await openWamp();
   });
 
-  it('closes properly if the transport gets closed or has an error', async () => {});
-  it('closes properly if a GOODBYE message is recevied', async () => {});
+  it('closes properly if the transport gets closed or has an error', async () => {
+    transportProvider.transport.close();
+    await waitUntilPass(() => expect(wamp.isOpen).toBe(false));
+  });
+
+  it('closes properly if a GOODBYE message is recevied', async () => {
+    transportProvider.sendToLib(MessageTypes.Goodbye, [{}, 'com.some.reason']);
+    await waitUntilPass(() => expect(wamp.isOpen).toBe(false));
+  });
 });
