@@ -12,7 +12,7 @@ export class Transport {
 
   private _isClosed = false;
   public get isClosed(): boolean {
-    return this.isClosed;
+    return this._isClosed;
   }
 
   private _messageEvent = new SimpleEventEmitter<[message: WampMessage]>();
