@@ -1,31 +1,17 @@
 import { Swampyer } from './swampyer';
 import { Transport, TransportProvider } from './transports/transport';
 import { MessageData, MessageTypes, WampMessage } from './types';
+import { waitUntilPass } from './utils';
 
 class MockTransportProvider implements TransportProvider {
   transport = new Transport();
-  messages: { type: 'toLib' | 'fromLib', message: WampMessage }[] = [];
-  readLoopIsRunning = true;
-
+  isOpen = false;
   open() {
-    this.readLoop();
+    this.transport.open();
+    this.isOpen = true;
   }
-
   sendToLib<T extends MessageTypes>(messageType: T, data: MessageData[T]) {
     this.transport.write([messageType, ...data]);
-  }
-
-  private async readLoop() {
-    try {
-      while (true) {
-        this.messages.push({
-          type: 'fromLib',
-          message: await this.transport.read()
-        });
-      }
-    } catch (e) {
-      this.readLoopIsRunning = false;
-    }
   }
 }
 
@@ -34,6 +20,7 @@ let wamp: Swampyer;
 
 beforeEach(() => {
   transportProvider = new MockTransportProvider();
+  wamp = new Swampyer();
 });
 
 afterEach(() => {
@@ -42,15 +29,47 @@ afterEach(() => {
 });
 
 describe('open()', () => {
-  it('can establish an unauthenticated WAMP connection if no auth data is provided', async () => {});
-  it('can establish an authenticated WAMP connection if auth data is provided', async () => {});
+  it('can establish an unauthenticated WAMP connection if no auth data is provided', async () => {
+    const onOpen = jest.fn();
+    wamp.openEvent.addEventListener(onOpen);
+
+    const openPromise = wamp.open(transportProvider, { realm: 'test-realm' });
+    await waitUntilPass(() => expect(transportProvider.isOpen).toBe(true));
+
+    expect(await transportProvider.transport.read()).toEqual([MessageTypes.Hello, 'test-realm', expect.objectContaining({
+      agent: expect.any(String),
+      authmethods: ['anonymous'],
+      roles: expect.objectContaining({
+        callee: expect.anything(),
+        caller: expect.anything(),
+        publisher: expect.anything(),
+        subscriber: expect.anything(),
+      })
+    })]);
+
+    expect(onOpen).toBeCalledTimes(0);
+
+    const expectedWelcomeDetails = { authid: 'someone', authrole: 'auth_master', authmethod: 'anonymous', roles: {} };
+    transportProvider.sendToLib(MessageTypes.Welcome, [1234, expectedWelcomeDetails]);
+    const welcomeDetails = await openPromise;
+
+    expect(welcomeDetails).toEqual(expectedWelcomeDetails);
+    expect(onOpen).toBeCalledTimes(1);
+    expect(onOpen).toBeCalledWith(expectedWelcomeDetails);
+  });
+
+  it('can establish an authenticated WAMP connection if auth data is provided', async () => {
+
+  });
+
+  it('allows for curom "agent" to be set for establishing a WAMP connection', async () => {});
+  it('emits an event on the "openEvent" event listener', async () => {});
   it('throws an error if the transport is closed before a WAMP connection can be opened', async () => {});
   it('throws an error if the WAMP server sends an ABORT message', async () => {});
   it('throws an error if the "auth.onChallenge" function has an error', async () => {});
   it('throws an error if we try to call "open()" again while the connection is already open', async () => {});
   it('throws an error if we call "open()" while a previous call to "open()" is still in progress', async () => {});
   it('closes the transport if any errors occur', async () => {});
-  it('emits an event on the "openEvent" event listener', async () => {});
 });
 
 describe('close()', () => {
