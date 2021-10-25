@@ -440,9 +440,33 @@ describe('subscribe()', () => {
 });
 
 describe('publish()', () => {
-  it('publishes to the desired URI', async () => {});
-  it('optionally waits for acknowledgement', async () => {});
-  it('throws an error if publish operation fails acknowledgement', async () => {});
+  beforeEach(async () => {
+    await openWamp();
+  });
+
+  it('publishes to the desired URI', async () => {
+    wamp.publish('com.some.uri', ['something'], { something: 'else' });
+    expect(await transportProvider.transport.read()).toEqual(
+      [MessageTypes.Publish, expect.any(Number), {}, 'com.some.uri', ['something'], { something: 'else' }]
+    );
+  });
+
+  it('optionally waits for acknowledgement', async () => {
+    const promise = wamp.publish('com.some.uri', ['something'], { something: 'else' }, { acknowledge: true });
+    const request = await transportProvider.transport.read();
+    expect(request).toEqual(
+      [MessageTypes.Publish, expect.any(Number), { acknowledge: true }, 'com.some.uri', ['something'], { something: 'else' }]
+    );
+    transportProvider.sendToLib(MessageTypes.Published, [request[1] as number, expect.any(Number)]);
+    await promise;
+  });
+
+  it('throws an error if publish operation fails acknowledgement', async () => {
+    const promise = wamp.publish('com.some.uri', ['something'], { something: 'else' }, { acknowledge: true });
+    const request = await transportProvider.transport.read();
+    transportProvider.sendToLib(MessageTypes.Error, [MessageTypes.Publish, request[1] as number, {}, 'something bad', [], {}]);
+    await expect(promise).rejects.toEqual(expect.anything());
+  });
 });
 
 describe('unsubscribe()', () => {
