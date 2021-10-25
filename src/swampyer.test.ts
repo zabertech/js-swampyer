@@ -426,6 +426,14 @@ describe('subscribe()', () => {
     await expect(promise).rejects.toEqual(expect.anything());
   });
 
+  it('throws an error if GOODBYE event occurs before subscribe operation finishes', async () => {
+    const subHandler = jest.fn();
+    const promise = wamp.subscribe('com.some.uri', subHandler);
+    const request = await transportProvider.transport.read()
+    transportProvider.sendToLib(MessageTypes.Goodbye, [{}, 'com.some.reason']);
+    await expect(promise).rejects.toEqual(expect.anything());
+  });
+
   it('does nothing if subscription handler throws an error', async () => {
     const subHandler = jest.fn(() => { throw Error('I never subscribed to this!'); });
     const promise = wamp.subscribe('com.some.uri', subHandler);
@@ -470,12 +478,43 @@ describe('publish()', () => {
 });
 
 describe('unsubscribe()', () => {
+  const subId = 1234;
+
+  let handler: jest.Mock;
+
   beforeEach(async () => {
     await openWamp();
+
+    handler = jest.fn();
+    const promise = wamp.subscribe('com.some.uri', handler);
+    const request = await transportProvider.transport.read()
+    transportProvider.sendToLib(MessageTypes.Subscribed, [request[1] as number, subId]);
+    await promise;
   });
 
-  it('unsubscribes a subscription and the old subscription callback no longer responds to publish events', async () => {});
-  it('throws an error if the unsubscribe operation fails', async () => {});
+  it('unsubscribes a subscription and the old subscription callback no longer responds to publish events', async () => {
+    const promise = wamp.unsubscribe(subId);
+    const request = await transportProvider.transport.read()
+    expect(request).toEqual([MessageTypes.Unsubscribe, expect.any(Number), subId]);
+    transportProvider.sendToLib(MessageTypes.Unsubscribed, [request[1] as number]);
+    await promise;
+  });
+
+  it('throws an error if the unsubscribe operation fails', async () => {
+    const promise = wamp.unsubscribe(subId);
+    const request = await transportProvider.transport.read()
+    expect(request).toEqual([MessageTypes.Unsubscribe, expect.any(Number), subId]);
+    transportProvider.sendToLib(MessageTypes.Error, [MessageTypes.Unsubscribe, request[1] as number, {}, 'something bad', [], {}]);
+    await expect(promise).rejects.toEqual(expect.anything());
+  });
+
+  it('throws an error if a GOODBYE message is received before unsubscribe operation finishes', async () => {
+    const promise = wamp.unsubscribe(subId);
+    const request = await transportProvider.transport.read()
+    expect(request).toEqual([MessageTypes.Unsubscribe, expect.any(Number), subId]);
+    transportProvider.sendToLib(MessageTypes.Goodbye, [{}, 'com.some.reason']);
+    await expect(promise).rejects.toEqual(expect.anything());
+  });
 });
 
 describe('misc event handling', () => {
