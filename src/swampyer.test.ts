@@ -291,18 +291,52 @@ describe('register()', () => {
 });
 
 describe('call()', () => {
-  it('sends a call request and receives the result', async () => {});
-  it('throws an error if the call request fails', async () => {});
-  it('throws an error if a GOODBYE message is received before the call can be finished', async () => {});
-  it('throws an error if the callee responds with an error for the call', async () => {});
+  const args = ['my_args'];
+  const kwargs = { my: 'kwargs' };
+
+  beforeEach(async () => {
+    await openWamp();
+  });
+
+  it('sends a call request and receives the result', async () => {
+    const promise = wamp.call('com.test.something', args, kwargs);
+    const request = await transportProvider.transport.read()
+    expect(request).toEqual([MessageTypes.Call, expect.any(Number), {}, 'com.test.something', args, kwargs]);
+    transportProvider.sendToLib(MessageTypes.Result, [request[1] as number, {}, ['something'], { something: 'else' }]);
+    expect(await promise).toEqual('something');
+  });
+
+  it('throws an error if the call request fails', async () => {
+    const promise = wamp.call('com.test.something', args, kwargs);
+    const request = await transportProvider.transport.read()
+    expect(request).toEqual([MessageTypes.Call, expect.any(Number), {}, 'com.test.something', args, kwargs]);
+    transportProvider.sendToLib(MessageTypes.Error, [MessageTypes.Call, request[1] as number, {}, 'something bad', [], {}]);
+    await expect(promise).rejects.toEqual(expect.anything());
+  });
+
+  it('throws an error if a GOODBYE message is received before the call can be finished', async () => {
+    const promise = wamp.call('com.test.something', args, kwargs);
+    const request = await transportProvider.transport.read()
+    expect(request).toEqual([MessageTypes.Call, expect.any(Number), {}, 'com.test.something', args, kwargs]);
+    transportProvider.sendToLib(MessageTypes.Goodbye, [{}, 'com.some.reason']);
+    await expect(promise).rejects.toEqual(expect.anything());
+  });
 });
 
 describe('unregister()', () => {
+  beforeEach(async () => {
+    await openWamp();
+  });
+
   it('unregisters a registration and the old registration callback no longer responds to any calls to that URI', async () => {});
   it('throws an error if the unregistration fails', async () => {});
 });
 
 describe('subscribe() and publish()', () => {
+  beforeEach(async () => {
+    await openWamp();
+  });
+
   it('subscribes to the desired URI', async () => {});
   it('calls the subscribed callback when a PUBLISH event is received for the given URI', async () => {});
   it('throws an error if subscription fails', async () => {});
@@ -311,11 +345,19 @@ describe('subscribe() and publish()', () => {
 });
 
 describe('unsubscribe()', () => {
+  beforeEach(async () => {
+    await openWamp();
+  });
+
   it('unsubscribes a subscription and the old subscription callback no longer responds to publish events', async () => {});
   it('throws an error if the unsubscribe operation fails', async () => {});
 });
 
 describe('misc event handling', () => {
+  beforeEach(async () => {
+    await openWamp();
+  });
+
   it('closes properly if the transport gets closed or has an error', async () => {});
   it('closes properly if a GOODBYE message is recevied', async () => {});
 });

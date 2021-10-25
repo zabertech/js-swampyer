@@ -240,7 +240,6 @@ export class Swampyer {
       }
       case MessageTypes.Goodbye: {
         const [details, reason] = data as MessageData[MessageTypes.Goodbye];
-        console.log('GOODBYE EVENT', details, reason);
         this.transport!._send(MessageTypes.Goodbye, [{}, 'wamp.close.goodbye_and_out']);
         this.resetState();
         break;
