@@ -208,13 +208,93 @@ describe('close()', () => {
   });
 });
 
-describe('register() and call()', () => {
-  it('registers a callback for a URI', async () => {});
-  it('responds to call() to the URI', async () => {});
-  it('multiple reigstrations are kept separate and handled properly when a call() is made for them', async () => {});
-  it('throws an error if an ERROR message is received while registering', async () => {});
-  it('throws an error if a GOODBYE message is received while registering', async () => {});
-  it('handles errors thrown by registration callbacks and makes the call() throw an error', async () => {});
+describe('register()', () => {
+  beforeEach(async () => {
+    await openWamp();
+  });
+
+  it('registers an (async) callback for a URI and responds to call() on that URI', async () => {
+    const regHandler = jest.fn().mockResolvedValue('fancy result');
+    const regPromise = wamp.register('com.test.something', regHandler);
+
+    const regRequest = await transportProvider.transport.read();
+    expect(regRequest).toEqual([MessageTypes.Register, expect.any(Number), expect.any(Object), 'com.test.something']);
+    transportProvider.sendToLib(MessageTypes.Registered, [regRequest[1] as number, 1234]);
+
+    const regId = await regPromise;
+    expect(regId).toEqual(1234);
+
+    const args = [2, 'args'];
+    const kwargs = { one: 'kwarg' };
+    const details = {};
+    transportProvider.sendToLib(MessageTypes.Invocation, [5656, 1234, details, args, kwargs]);
+    await waitUntilPass(() => expect(regHandler).toBeCalledTimes(1));
+    expect(regHandler).toBeCalledWith(args, kwargs, details);
+
+    expect(await transportProvider.transport.read()).toEqual([MessageTypes.Yield, 5656, {}, ['fancy result'], {}]);
+  });
+
+  it('multiple reigstrations are kept separate and handled properly when a call() is made for them', async () => {
+    const regHandler1 = jest.fn().mockResolvedValue('fancy result 1');
+    const regPromise1 = wamp.register('com.test.something', regHandler1);
+    const regRequest1 = await transportProvider.transport.read();
+    transportProvider.sendToLib(MessageTypes.Registered, [regRequest1[1] as number, 1234]);
+    await regPromise1;
+
+    const regHandler2 = jest.fn().mockResolvedValue('fancy result 2');
+    const regPromise2 = wamp.register('com.test.something_different', regHandler2);
+    const regRequest2 = await transportProvider.transport.read();
+    transportProvider.sendToLib(MessageTypes.Registered, [regRequest2[1] as number, 9876]);
+    await regPromise2;
+
+    transportProvider.sendToLib(MessageTypes.Invocation, [5656, 1234, {}, ['for 1st reg'], {}]);
+    transportProvider.sendToLib(MessageTypes.Invocation, [6767, 9876, {}, ['for 2nd reg'], {}]);
+
+    expect(regHandler1).toBeCalledWith(['for 1st reg'], {}, {});
+    expect(regHandler2).toBeCalledWith(['for 2nd reg'], {}, {});
+
+    expect(await transportProvider.transport.read()).toEqual([MessageTypes.Yield, 5656, {}, ['fancy result 1'], {}]);
+    expect(await transportProvider.transport.read()).toEqual([MessageTypes.Yield, 6767, {}, ['fancy result 2'], {}]);
+  });
+
+  it('throws an error if an ERROR message is received while registering', async () => {
+    const regHandler = jest.fn().mockResolvedValue('fancy result');
+    const regPromise = wamp.register('com.test.something', regHandler);
+    const regRequest = await transportProvider.transport.read();
+    transportProvider.sendToLib(MessageTypes.Error, [MessageTypes.Register, regRequest[1] as number, {}, 'something bad', [], {}]);
+
+    await expect(regPromise).rejects.toEqual(expect.anything());
+  });
+
+  it('throws an error if a GOODBYE message is received while registering', async () => {
+    const regHandler = jest.fn().mockResolvedValue('fancy result');
+    const regPromise = wamp.register('com.test.something', regHandler);
+    await transportProvider.transport.read();
+    transportProvider.sendToLib(MessageTypes.Goodbye, [{}, 'com.some.reason']);
+
+    await expect(regPromise).rejects.toEqual(expect.anything());
+  });
+
+  it('handles errors thrown by registration callbacks and returns the error to the caller', async () => {
+    const regHandler = jest.fn().mockRejectedValue('Some error');
+    const regPromise = wamp.register('com.test.something', regHandler);
+    const regRequest = await transportProvider.transport.read();
+    transportProvider.sendToLib(MessageTypes.Registered, [regRequest[1] as number, 1234]);
+    await regPromise;
+
+    transportProvider.sendToLib(MessageTypes.Invocation, [5656, 1234, {}, ['args over here'], {}]);
+
+    expect(await transportProvider.transport.read()).toEqual(
+      [MessageTypes.Error, MessageTypes.Invocation, 5656, {}, expect.any(String), ['Some error'], {}]
+    );
+  });
+});
+
+describe('call()', () => {
+  it('sends a call request and receives the result', async () => {});
+  it('throws an error if the call request fails', async () => {});
+  it('throws an error if a GOODBYE message is received before the call can be finished', async () => {});
+  it('throws an error if the callee responds with an error for the call', async () => {});
 });
 
 describe('unregister()', () => {

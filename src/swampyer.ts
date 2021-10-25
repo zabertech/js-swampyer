@@ -229,12 +229,12 @@ export class Swampyer {
             [MessageTypes.Invocation, requestId, {}, 'com.error.unavailable', ['No handler available for this request'], {}]
           );
         } else {
-          try {
-            const result = handler(args, kwargs, details);
-            this.transport!._send(MessageTypes.Yield, [requestId, {}, [result], {}]);
-          } catch (e) {
-            this.transport!._send(MessageTypes.Error, [MessageTypes.Invocation, requestId, {}, 'error.invoke.failed', [e], {}])
-          }
+          Promise.resolve(handler(args, kwargs, details))
+            .then(result => this.transport!._send(MessageTypes.Yield, [requestId, {}, [result], {}]))
+            .catch(e => this.transport!._send(
+              MessageTypes.Error,
+              [MessageTypes.Invocation, requestId, {}, 'error.invoke.failed', [e], {}])
+            );
         }
         break;
       }
