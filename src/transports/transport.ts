@@ -27,12 +27,12 @@ export class Transport {
    * An exception indicates that the transport has been closed and there will be no more messages
    * to read on this transport.
    */
-  async read() {
+  async read(): Promise<WampMessage> {
     if (this._isClosed) {
       throw Error('closed');
     }
     if (this.sendQueue.length) {
-      return this.sendQueue.shift();
+      return this.sendQueue.shift() as WampMessage;
     }
     const deferred = deferredPromise<WampMessage>();
     this.ongoingReads.push(deferred);
