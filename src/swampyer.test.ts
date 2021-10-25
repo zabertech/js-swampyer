@@ -377,15 +377,71 @@ describe('unregister()', () => {
   });
 });
 
-describe('subscribe() and publish()', () => {
+describe('subscribe()', () => {
   beforeEach(async () => {
     await openWamp();
   });
 
-  it('subscribes to the desired URI', async () => {});
-  it('calls the subscribed callback when a PUBLISH event is received for the given URI', async () => {});
-  it('throws an error if subscription fails', async () => {});
-  it('publish() optionally waits for acknowledgement', async () => {});
+  it('subscribes to the desired URI and handles publish events', async () => {
+    const subHandler = jest.fn();
+    const promise = wamp.subscribe('com.some.uri', subHandler);
+    const request = await transportProvider.transport.read()
+    expect(request).toEqual([MessageTypes.Subscribe, expect.any(Number), expect.any(Object), 'com.some.uri']);
+    transportProvider.sendToLib(MessageTypes.Subscribed, [request[1] as number, 1234]);
+    await promise;
+
+    const args = [2, 'args'];
+    const kwargs = { one: 'kwarg' };
+    const details = {};
+    transportProvider.sendToLib(MessageTypes.Event, [1234, 5555, details, args, kwargs]);
+    expect(subHandler).toBeCalledTimes(1);
+    expect(subHandler).toBeCalledWith(args, kwargs, details);
+  });
+
+  it('multiple subscriptions can co-exist', async () => {
+    const subHandler1 = jest.fn();
+    const promise1 = wamp.subscribe('com.some.uri', subHandler1);
+    const request1 = await transportProvider.transport.read()
+    transportProvider.sendToLib(MessageTypes.Subscribed, [request1[1] as number, 1234]);
+    await promise1;
+
+    const subHandler2 = jest.fn();
+    const promise2 = wamp.subscribe('com.some.uri', subHandler2);
+    const request2 = await transportProvider.transport.read()
+    transportProvider.sendToLib(MessageTypes.Subscribed, [request2[1] as number, 9876]);
+    await promise2;
+
+    transportProvider.sendToLib(MessageTypes.Event, [1234, 5555, {}, ['for 1st sub'], {}]);
+    transportProvider.sendToLib(MessageTypes.Event, [9876, 6666, {}, ['for 2nd sub'], {}]);
+
+    expect(subHandler1).toBeCalledWith(['for 1st sub'], {}, {});
+    expect(subHandler2).toBeCalledWith(['for 2nd sub'], {}, {});
+  });
+
+  it('throws an error if subscription fails', async () => {
+    const subHandler = jest.fn();
+    const promise = wamp.subscribe('com.some.uri', subHandler);
+    const request = await transportProvider.transport.read()
+    transportProvider.sendToLib(MessageTypes.Error, [MessageTypes.Subscribe, request[1] as number, {}, 'something bad', [], {}]);
+    await expect(promise).rejects.toEqual(expect.anything());
+  });
+
+  it('does nothing if subscription handler throws an error', async () => {
+    const subHandler = jest.fn(() => { throw Error('I never subscribed to this!'); });
+    const promise = wamp.subscribe('com.some.uri', subHandler);
+    const request = await transportProvider.transport.read()
+    expect(request).toEqual([MessageTypes.Subscribe, expect.any(Number), expect.any(Object), 'com.some.uri']);
+    transportProvider.sendToLib(MessageTypes.Subscribed, [request[1] as number, 1234]);
+    await promise;
+
+    transportProvider.sendToLib(MessageTypes.Event, [1234, 5555, {}, ['args'], {}]);
+    expect(subHandler).toBeCalledTimes(1);
+  });
+});
+
+describe('publish()', () => {
+  it('publishes to the desired URI', async () => {});
+  it('optionally waits for acknowledgement', async () => {});
   it('throws an error if publish operation fails acknowledgement', async () => {});
 });
 

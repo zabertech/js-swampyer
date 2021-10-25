@@ -217,7 +217,9 @@ export class Swampyer {
     switch (messageType) {
       case MessageTypes.Event: {
         const [subscriptionId, publishId, details, args, kwargs] = data as MessageData[MessageTypes.Event];
-        this.subscriptionHandlers[subscriptionId]?.(args, kwargs, details);
+        try {
+          this.subscriptionHandlers[subscriptionId]?.(args, kwargs, details);
+        } catch (e) {/* Do nothing */}
         break;
       }
       case MessageTypes.Invocation: {
