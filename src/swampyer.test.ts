@@ -324,12 +324,47 @@ describe('call()', () => {
 });
 
 describe('unregister()', () => {
+  const regId = 1234;
+
+  let handler: jest.Mock;
+
   beforeEach(async () => {
     await openWamp();
+
+    handler = jest.fn().mockRejectedValue('Some error');
+    const promise = wamp.register('com.test.something', handler);
+    const request = await transportProvider.transport.read();
+    transportProvider.sendToLib(MessageTypes.Registered, [request[1] as number, regId]);
+    await promise;
   });
 
-  it('unregisters a registration and the old registration callback no longer responds to any calls to that URI', async () => {});
-  it('throws an error if the unregistration fails', async () => {});
+  it('unregisters a registration and the old registration callback no longer responds to any calls to that URI', async () => {
+    const promise = wamp.unregister(regId);
+    const request = await transportProvider.transport.read()
+    expect(request).toEqual([MessageTypes.Unregister, expect.any(Number), regId]);
+    transportProvider.sendToLib(MessageTypes.Unregistered, [request[1] as number]);
+    await promise;
+
+    expect(handler).toBeCalledTimes(0);
+    transportProvider.sendToLib(MessageTypes.Invocation, [6767, 9876, {}, ['args'], {}]);
+    expect(handler).toBeCalledTimes(0);
+  });
+
+  it('throws an error if the unregistration fails', async () => {
+    const promise = wamp.unregister(regId);
+    const request = await transportProvider.transport.read()
+    expect(request).toEqual([MessageTypes.Unregister, expect.any(Number), regId]);
+    transportProvider.sendToLib(MessageTypes.Error, [MessageTypes.Unregister, request[1] as number, {}, 'something bad', [], {}]);
+    await expect(promise).rejects.toEqual(expect.anything());
+  });
+
+  it('throws an error if a GOODBYE event occurs while unregistering', async () => {
+    const promise = wamp.unregister(regId);
+    const request = await transportProvider.transport.read()
+    expect(request).toEqual([MessageTypes.Unregister, expect.any(Number), regId]);
+    transportProvider.sendToLib(MessageTypes.Goodbye, [{}, 'com.some.reason']);
+    await expect(promise).rejects.toEqual(expect.anything());
+  });
 });
 
 describe('subscribe() and publish()', () => {
