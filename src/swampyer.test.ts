@@ -182,9 +182,30 @@ describe('open()', () => {
 });
 
 describe('close()', () => {
-  it('closes the WAMP connection and the transport', async () => {});
-  it('allows custom reason and message to be provided for why the connection is being closed', async () => {});
-  it('throws an error if the close operation fails', async () => {});
+  beforeEach(async () => {
+    await openWamp();
+  });
+
+  it('closes the WAMP connection and the transport', async () => {
+    const onClose = jest.fn();
+    wamp.closeEvent.addEventListener(onClose);
+
+    expect(transportProvider.transport.isClosed).toBe(false);
+
+    const closePromise = wamp.close();
+    expect(await transportProvider.transport.read()).toEqual([MessageTypes.Goodbye, expect.any(Object), expect.any(String)]);
+    transportProvider.sendToLib(MessageTypes.Goodbye, [{}, 'com.fine.go.away.then']);
+
+    await closePromise;
+    expect(wamp.isOpen).toBe(false);
+    expect(transportProvider.transport.isClosed).toBe(true);
+    expect(onClose).toBeCalledTimes(1);
+  });
+
+  it('allows custom reason and message to be provided for why the connection is being closed', async () => {
+    wamp.close('com.i.am.leaving', 'BYE!');
+    expect(await transportProvider.transport.read()).toEqual([MessageTypes.Goodbye, { message: 'BYE!' }, 'com.i.am.leaving']);
+  });
 });
 
 describe('register() and call()', () => {
