@@ -30,15 +30,16 @@ afterEach(() => {
   wamp = null!;
 });
 
-async function openWamp() {
-  const openPromise = wamp.open(transportProvider, { realm })
+async function openWamp(customTransportProvider?: MockTransportProvider) {
+  const provider = customTransportProvider ?? transportProvider;
+  const openPromise = wamp.open(provider, { realm })
     .catch(e => {
       throw e;
     });
 
-  await waitUntilPass(() => expect(transportProvider.isOpen).toBe(true));
-  expect(await transportProvider.transport.read()).toEqual([MessageTypes.Hello, 'test-realm', expect.any(Object)]);
-  transportProvider.sendToLib(MessageTypes.Welcome, [1234, {
+  await waitUntilPass(() => expect(provider.isOpen).toBe(true));
+  expect(await provider.transport.read()).toEqual([MessageTypes.Hello, 'test-realm', expect.any(Object)]);
+  provider.sendToLib(MessageTypes.Welcome, [1234, {
     authid: 'someone',
     authrole: 'auth_master',
     authmethod: 'anonymous',
@@ -205,6 +206,15 @@ describe('close()', () => {
   it('allows custom reason and message to be provided for why the connection is being closed', async () => {
     wamp.close('com.i.am.leaving', 'BYE!');
     expect(await transportProvider.transport.read()).toEqual([MessageTypes.Goodbye, { message: 'BYE!' }, 'com.i.am.leaving']);
+  });
+
+  it('allows the same "Swampyer" object to be used to open a new connection after it gets closed', async () => {
+    const closePromise = wamp.close();
+    await transportProvider.transport.read();
+    transportProvider.sendToLib(MessageTypes.Goodbye, [{}, 'com.fine.go.away.then']);
+    await closePromise;
+
+    await openWamp(new MockTransportProvider());
   });
 });
 
