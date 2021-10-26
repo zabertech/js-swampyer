@@ -1,3 +1,4 @@
+import { AbortError, ConnectionOpenError, ConnectionClosedError, SwampyerError, SwampyerOperationError, TransportError } from './errors';
 import type { Transport, TransportProvider } from './transports/transport';
 import {
   WampMessage, MessageData, MessageTypes, PublishOptions, RegistrationHandler, SubscriptionHandler, WelcomeDetails,
@@ -20,7 +21,7 @@ export class Swampyer {
   private onCloseCleanup: (() => void)[] = [];
 
   private _openEvent = new SimpleEventEmitter<[WelcomeDetails]>();
-  private _closeEvent = new SimpleEventEmitter<[error?: Error]>();
+  private _closeEvent = new SimpleEventEmitter<[error?: SwampyerError]>();
 
   public readonly openEvent = this._openEvent.publicObject;
   public readonly closeEvent = this._closeEvent.publicObject;
@@ -31,9 +32,9 @@ export class Swampyer {
 
   async open(transportProvider: TransportProvider, options: OpenOptions): Promise<WelcomeDetails> {
     if (this.isOpen) {
-      throw Error('The connection is already open');
+      throw new ConnectionOpenError('The connection is already open');
     } else if (this.transport) {
-      throw Error('The connection is currently being opened');
+      throw new ConnectionOpenError('The connection is currently being opened');
     }
 
     this.transport = transportProvider.transport;
@@ -49,7 +50,7 @@ export class Swampyer {
     });
 
     const errorListenerCleanup = this.transport.closeEvent.addEventListener(error => {
-      deferred.reject(error || new Error('The transport was closed'));
+      deferred.reject(error ?? new TransportError('The transport was closed'));
     });
 
     const messageListenerCleanup = this.transport.messageEvent.addEventListener(([messageType, ...data]) => {
@@ -62,7 +63,7 @@ export class Swampyer {
         }
         case MessageTypes.Abort: {
           const [details, reason] = data as MessageData[MessageTypes.Abort];
-          deferred.reject({ details, reason });
+          deferred.reject(new AbortError(reason, details));
           break;
         }
         case MessageTypes.Challenge: {
@@ -75,12 +76,12 @@ export class Swampyer {
             } catch (e) {
               const details = { message: 'An exception occured in onChallenge handler' };
               this.transport!._send(MessageTypes.Abort, [details, errorReason]);
-              deferred.reject({ details, reason: errorReason });
+              deferred.reject(new AbortError(errorReason, details));
             }
           } else {
             const details = { message: 'An onChallenge handler is not defined' };
             this.transport!._send(MessageTypes.Abort, [details, errorReason]);
-            deferred.reject({ details, reason: errorReason });
+            deferred.reject(new AbortError(errorReason, details));
           }
           break;
         }
@@ -108,7 +109,7 @@ export class Swampyer {
 
   async close(reason = 'wamp.close.system_shutdown', message?: string): Promise<void> {
     if (!this.isOpen) {
-      throw Error('The connection is not open and can not be closed');
+      throw new SwampyerError('The connection is not open and can not be closed');
     }
 
     this.transport!._send(MessageTypes.Goodbye, [message ? { message } : {}, reason]);
@@ -198,13 +199,13 @@ export class Swampyer {
 
       if (messageType === MessageTypes.Error && data[0] === requestType && data[1] === requestId) {
         const [, , details, error, args, kwargs] = data as MessageData[MessageTypes.Error];
-        deferred.reject({ details, error, args, kwargs });
+        deferred.reject(new SwampyerOperationError(details, error, args, kwargs));
         return;
       }
 
       if (messageType === MessageTypes.Goodbye) {
         const [details, reason] = data as MessageData[MessageTypes.Goodbye];
-        deferred.reject({ details, reason });
+        deferred.reject(new ConnectionClosedError(reason, details));
         return;
       }
     });
@@ -272,7 +273,7 @@ export class Swampyer {
 
   private throwIfNotOpen() {
     if (!this.isOpen) {
-      throw Error('The connection is not open');
+      throw new SwampyerError('The connection is not open');
     }
   }
 }
