@@ -1,4 +1,7 @@
+/* eslint-disable @typescript-eslint/no-floating-promises */
+
 import { waitUntilPass } from '../utils';
+
 import { Transport } from './transport';
 
 describe('Transport', () => {
@@ -41,7 +44,7 @@ describe('Transport', () => {
     it('throws an error if the transport is already closed', async () => {
       const transport = new Transport();
       transport.close();
-      expect(transport.read()).rejects.toEqual(expect.anything())
+      expect(transport.read()).rejects.toEqual(expect.anything());
     });
   });
 

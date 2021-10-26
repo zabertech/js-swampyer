@@ -29,7 +29,7 @@ export class SimpleEventEmitter<Data extends unknown[] = []> {
     this.callbacks[id] = callback;
     return () => {
       delete this.callbacks[id];
-    }
+    };
   }
 
   emit(...data: Data) {

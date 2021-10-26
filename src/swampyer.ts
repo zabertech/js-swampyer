@@ -44,12 +44,12 @@ export class Swampyer {
         authid: options.auth?.authId,
         agent: options.agent || 'swampyer-js',
         authmethods: options.auth?.authMethods || ['anonymous'],
-        roles: {subscriber: {}, publisher: {}, caller: {}, callee: {}},
+        roles: { subscriber: {}, publisher: {}, caller: {}, callee: {} },
       }]);
     });
 
     const errorListenerCleanup = this.transport.closeEvent.addEventListener(error => {
-      deferred.reject(error || new Error('The transport was closed'))
+      deferred.reject(error || new Error('The transport was closed'));
     });
 
     const messageListenerCleanup = this.transport.messageEvent.addEventListener(([messageType, ...data]) => {
@@ -119,7 +119,7 @@ export class Swampyer {
       }
     });
 
-    deferred.promise.catch(() => {}).finally(() => {
+    deferred.promise.catch(() => { /* Not used */ }).finally(() => {
       messageListenerCleanup();
       this.resetState();
     });
@@ -130,7 +130,7 @@ export class Swampyer {
     this.throwIfNotOpen();
     const requestId = this.registrationRequestId;
     this.registrationRequestId += 1;
-    const [ , registrationId] = await this.sendRequest(MessageTypes.Register, [requestId, {}, uri], MessageTypes.Registered);
+    const [, registrationId] = await this.sendRequest(MessageTypes.Register, [requestId, {}, uri], MessageTypes.Registered);
     this.registrationHandlers[registrationId] = handler;
     return registrationId;
   }
@@ -147,14 +147,14 @@ export class Swampyer {
     this.throwIfNotOpen();
     const requestId = this.callRequestId;
     this.callRequestId += 1;
-    const [ , , resultArray ] = await this.sendRequest(MessageTypes.Call, [requestId, {}, uri, args, kwargs], MessageTypes.Result);
+    const [, , resultArray] = await this.sendRequest(MessageTypes.Call, [requestId, {}, uri, args, kwargs], MessageTypes.Result);
     return resultArray[0];
   }
 
   async subscribe(uri: string, handler: SubscriptionHandler): Promise<number> {
     this.throwIfNotOpen();
     const requestId = generateRandomInt();
-    const [ , subscriptionId] = await this.sendRequest(MessageTypes.Subscribe, [requestId, {}, uri], MessageTypes.Subscribed);
+    const [, subscriptionId] = await this.sendRequest(MessageTypes.Subscribe, [requestId, {}, uri], MessageTypes.Subscribed);
     this.subscriptionHandlers[subscriptionId] = handler;
     return subscriptionId;
   }
@@ -173,7 +173,7 @@ export class Swampyer {
 
     const payload: MessageData[MessageTypes.Publish] = [requestId, options, uri, args, kwargs];
     if (options.acknowledge) {
-      await this.sendRequest(MessageTypes.Publish, payload, MessageTypes.Published)
+      await this.sendRequest(MessageTypes.Publish, payload, MessageTypes.Published);
     } else {
       this.transport!._send(MessageTypes.Publish, payload);
     }
@@ -197,7 +197,7 @@ export class Swampyer {
       }
 
       if (messageType === MessageTypes.Error && data[0] === requestType && data[1] === requestId) {
-        const [ , , details, error, args, kwargs] = data as MessageData[MessageTypes.Error];
+        const [, , details, error, args, kwargs] = data as MessageData[MessageTypes.Error];
         deferred.reject({ details, error, args, kwargs });
         return;
       }
@@ -209,17 +209,17 @@ export class Swampyer {
       }
     });
 
-    deferred.promise.catch(() => {}).finally(messageListenerCleanup);
+    deferred.promise.catch(() => { /* Not used */ }).finally(messageListenerCleanup);
     return deferred.promise;
   }
 
   private handleEvents([messageType, ...data]: WampMessage) {
     switch (messageType) {
       case MessageTypes.Event: {
-        const [subscriptionId, publishId, details, args, kwargs] = data as MessageData[MessageTypes.Event];
+        const [subscriptionId, , details, args, kwargs] = data as MessageData[MessageTypes.Event];
         try {
           this.subscriptionHandlers[subscriptionId]?.(args, kwargs, details);
-        } catch (e) {/* Do nothing */}
+        } catch (e) { /* Do nothing */ }
         break;
       }
       case MessageTypes.Invocation: {
@@ -241,7 +241,6 @@ export class Swampyer {
         break;
       }
       case MessageTypes.Goodbye: {
-        const [details, reason] = data as MessageData[MessageTypes.Goodbye];
         this.transport!._send(MessageTypes.Goodbye, [{}, 'wamp.close.goodbye_and_out']);
         this.resetState();
         break;

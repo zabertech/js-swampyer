@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-floating-promises */
 import { Swampyer } from './swampyer';
 import { Transport, TransportProvider } from './transports/transport';
-import { MessageData, MessageTypes, WampMessage } from './types';
+import { MessageData, MessageTypes } from './types';
 import { waitUntilPass } from './utils';
 
 class MockTransportProvider implements TransportProvider {
@@ -84,11 +85,13 @@ describe('open()', () => {
 
     wamp.openEvent.addEventListener(onOpen);
 
-    const openPromise = wamp.open(transportProvider, { realm, auth: {
-      authId: 'amazing-test-man',
-      authMethods: ['ticket', 'whatever'],
-      onChallenge,
-    }});
+    const openPromise = wamp.open(transportProvider, {
+      realm, auth: {
+        authId: 'amazing-test-man',
+        authMethods: ['ticket', 'whatever'],
+        onChallenge,
+      }
+    });
     await waitUntilPass(() => expect(transportProvider.isOpen).toBe(true));
 
     expect(await transportProvider.transport.read()).toEqual([MessageTypes.Hello, realm, expect.objectContaining({
@@ -145,11 +148,13 @@ describe('open()', () => {
   });
 
   it('throws an error if the "auth.onChallenge" function has an error', async () => {
-    const openPromise = wamp.open(transportProvider, { realm, auth: {
-      authId: 'amazing-test-man',
-      authMethods: ['ticket', 'whatever'],
-      onChallenge: () => { throw Error('Too challenging') },
-    }});
+    const openPromise = wamp.open(transportProvider, {
+      realm, auth: {
+        authId: 'amazing-test-man',
+        authMethods: ['ticket', 'whatever'],
+        onChallenge: () => { throw Error('Too challenging') },
+      }
+    });
 
     await waitUntilPass(() => expect(transportProvider.isOpen).toBe(true));
     expect(await transportProvider.transport.read()).toEqual([MessageTypes.Hello, realm, expect.any(Object)]);
@@ -310,7 +315,7 @@ describe('call()', () => {
 
   it('sends a call request and receives the result', async () => {
     const promise = wamp.call('com.test.something', args, kwargs);
-    const request = await transportProvider.transport.read()
+    const request = await transportProvider.transport.read();
     expect(request).toEqual([MessageTypes.Call, expect.any(Number), {}, 'com.test.something', args, kwargs]);
     transportProvider.sendToLib(MessageTypes.Result, [request[1] as number, {}, ['something'], { something: 'else' }]);
     expect(await promise).toEqual('something');
@@ -318,7 +323,7 @@ describe('call()', () => {
 
   it('throws an error if the call request fails', async () => {
     const promise = wamp.call('com.test.something', args, kwargs);
-    const request = await transportProvider.transport.read()
+    const request = await transportProvider.transport.read();
     expect(request).toEqual([MessageTypes.Call, expect.any(Number), {}, 'com.test.something', args, kwargs]);
     transportProvider.sendToLib(MessageTypes.Error, [MessageTypes.Call, request[1] as number, {}, 'something bad', [], {}]);
     await expect(promise).rejects.toEqual(expect.anything());
@@ -326,7 +331,7 @@ describe('call()', () => {
 
   it('throws an error if a GOODBYE message is received before the call can be finished', async () => {
     const promise = wamp.call('com.test.something', args, kwargs);
-    const request = await transportProvider.transport.read()
+    const request = await transportProvider.transport.read();
     expect(request).toEqual([MessageTypes.Call, expect.any(Number), {}, 'com.test.something', args, kwargs]);
     transportProvider.sendToLib(MessageTypes.Goodbye, [{}, 'com.some.reason']);
     await expect(promise).rejects.toEqual(expect.anything());
@@ -350,7 +355,7 @@ describe('unregister()', () => {
 
   it('unregisters a registration and the old registration callback no longer responds to any calls to that URI', async () => {
     const promise = wamp.unregister(regId);
-    const request = await transportProvider.transport.read()
+    const request = await transportProvider.transport.read();
     expect(request).toEqual([MessageTypes.Unregister, expect.any(Number), regId]);
     transportProvider.sendToLib(MessageTypes.Unregistered, [request[1] as number]);
     await promise;
@@ -362,7 +367,7 @@ describe('unregister()', () => {
 
   it('throws an error if the unregistration fails', async () => {
     const promise = wamp.unregister(regId);
-    const request = await transportProvider.transport.read()
+    const request = await transportProvider.transport.read();
     expect(request).toEqual([MessageTypes.Unregister, expect.any(Number), regId]);
     transportProvider.sendToLib(MessageTypes.Error, [MessageTypes.Unregister, request[1] as number, {}, 'something bad', [], {}]);
     await expect(promise).rejects.toEqual(expect.anything());
@@ -370,7 +375,7 @@ describe('unregister()', () => {
 
   it('throws an error if a GOODBYE event occurs while unregistering', async () => {
     const promise = wamp.unregister(regId);
-    const request = await transportProvider.transport.read()
+    const request = await transportProvider.transport.read();
     expect(request).toEqual([MessageTypes.Unregister, expect.any(Number), regId]);
     transportProvider.sendToLib(MessageTypes.Goodbye, [{}, 'com.some.reason']);
     await expect(promise).rejects.toEqual(expect.anything());
@@ -385,7 +390,7 @@ describe('subscribe()', () => {
   it('subscribes to the desired URI and handles publish events', async () => {
     const subHandler = jest.fn();
     const promise = wamp.subscribe('com.some.uri', subHandler);
-    const request = await transportProvider.transport.read()
+    const request = await transportProvider.transport.read();
     expect(request).toEqual([MessageTypes.Subscribe, expect.any(Number), expect.any(Object), 'com.some.uri']);
     transportProvider.sendToLib(MessageTypes.Subscribed, [request[1] as number, 1234]);
     await promise;
@@ -401,13 +406,13 @@ describe('subscribe()', () => {
   it('multiple subscriptions can co-exist', async () => {
     const subHandler1 = jest.fn();
     const promise1 = wamp.subscribe('com.some.uri', subHandler1);
-    const request1 = await transportProvider.transport.read()
+    const request1 = await transportProvider.transport.read();
     transportProvider.sendToLib(MessageTypes.Subscribed, [request1[1] as number, 1234]);
     await promise1;
 
     const subHandler2 = jest.fn();
     const promise2 = wamp.subscribe('com.some.uri', subHandler2);
-    const request2 = await transportProvider.transport.read()
+    const request2 = await transportProvider.transport.read();
     transportProvider.sendToLib(MessageTypes.Subscribed, [request2[1] as number, 9876]);
     await promise2;
 
@@ -421,7 +426,7 @@ describe('subscribe()', () => {
   it('throws an error if subscription fails', async () => {
     const subHandler = jest.fn();
     const promise = wamp.subscribe('com.some.uri', subHandler);
-    const request = await transportProvider.transport.read()
+    const request = await transportProvider.transport.read();
     transportProvider.sendToLib(MessageTypes.Error, [MessageTypes.Subscribe, request[1] as number, {}, 'something bad', [], {}]);
     await expect(promise).rejects.toEqual(expect.anything());
   });
@@ -429,15 +434,15 @@ describe('subscribe()', () => {
   it('throws an error if GOODBYE event occurs before subscribe operation finishes', async () => {
     const subHandler = jest.fn();
     const promise = wamp.subscribe('com.some.uri', subHandler);
-    const request = await transportProvider.transport.read()
+    await transportProvider.transport.read();
     transportProvider.sendToLib(MessageTypes.Goodbye, [{}, 'com.some.reason']);
     await expect(promise).rejects.toEqual(expect.anything());
   });
 
   it('does nothing if subscription handler throws an error', async () => {
-    const subHandler = jest.fn(() => { throw Error('I never subscribed to this!'); });
+    const subHandler = jest.fn(() => { throw Error('I never subscribed to this!') });
     const promise = wamp.subscribe('com.some.uri', subHandler);
-    const request = await transportProvider.transport.read()
+    const request = await transportProvider.transport.read();
     expect(request).toEqual([MessageTypes.Subscribe, expect.any(Number), expect.any(Object), 'com.some.uri']);
     transportProvider.sendToLib(MessageTypes.Subscribed, [request[1] as number, 1234]);
     await promise;
@@ -487,14 +492,14 @@ describe('unsubscribe()', () => {
 
     handler = jest.fn();
     const promise = wamp.subscribe('com.some.uri', handler);
-    const request = await transportProvider.transport.read()
+    const request = await transportProvider.transport.read();
     transportProvider.sendToLib(MessageTypes.Subscribed, [request[1] as number, subId]);
     await promise;
   });
 
   it('unsubscribes a subscription and the old subscription callback no longer responds to publish events', async () => {
     const promise = wamp.unsubscribe(subId);
-    const request = await transportProvider.transport.read()
+    const request = await transportProvider.transport.read();
     expect(request).toEqual([MessageTypes.Unsubscribe, expect.any(Number), subId]);
     transportProvider.sendToLib(MessageTypes.Unsubscribed, [request[1] as number]);
     await promise;
@@ -502,7 +507,7 @@ describe('unsubscribe()', () => {
 
   it('throws an error if the unsubscribe operation fails', async () => {
     const promise = wamp.unsubscribe(subId);
-    const request = await transportProvider.transport.read()
+    const request = await transportProvider.transport.read();
     expect(request).toEqual([MessageTypes.Unsubscribe, expect.any(Number), subId]);
     transportProvider.sendToLib(MessageTypes.Error, [MessageTypes.Unsubscribe, request[1] as number, {}, 'something bad', [], {}]);
     await expect(promise).rejects.toEqual(expect.anything());
@@ -510,7 +515,7 @@ describe('unsubscribe()', () => {
 
   it('throws an error if a GOODBYE message is received before unsubscribe operation finishes', async () => {
     const promise = wamp.unsubscribe(subId);
-    const request = await transportProvider.transport.read()
+    const request = await transportProvider.transport.read();
     expect(request).toEqual([MessageTypes.Unsubscribe, expect.any(Number), subId]);
     transportProvider.sendToLib(MessageTypes.Goodbye, [{}, 'com.some.reason']);
     await expect(promise).rejects.toEqual(expect.anything());

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-floating-promises */
+
 import { WebsocketJson } from './websocket_json';
 
 let ws: MockWebSocket;
@@ -12,7 +14,7 @@ class MockWebSocket {
     ws = this;
     constructorArgs = args;
   }
-  close() {}
+  close() { /* Not used */ }
 }
 
 beforeAll(() => {
@@ -61,7 +63,7 @@ it('informs the underlying transport when the websocket connection closes', asyn
   expect(eventHandler).toBeCalledTimes(0);
   ws.onclose?.();
   expect(eventHandler).toBeCalledTimes(1);
-  expect(eventHandler).toBeCalledWith(undefined)
+  expect(eventHandler).toBeCalledWith(undefined);
 });
 
 it('informs the underlying transport when the websocket connection closes with an error', async () => {
