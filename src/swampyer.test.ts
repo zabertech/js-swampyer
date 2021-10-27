@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-floating-promises */
+import { OpenOptions } from 'src';
 import { TransportError, AbortError, ConnectionOpenError, SwampyerOperationError, ConnectionClosedError } from './errors';
 import { Swampyer } from './swampyer';
 import { Transport, TransportProvider } from './transports/transport';
@@ -32,9 +33,9 @@ afterEach(() => {
   wamp = null!;
 });
 
-async function openWamp(customTransportProvider?: MockTransportProvider) {
+async function openWamp(optionsOverride?: Partial<OpenOptions>, customTransportProvider?: MockTransportProvider) {
   const provider = customTransportProvider ?? transportProvider;
-  const openPromise = wamp.open(provider, { realm })
+  const openPromise = wamp.open(provider, { realm, ...optionsOverride })
     .catch(e => {
       throw e;
     });
@@ -220,7 +221,7 @@ describe('close()', () => {
     transportProvider.sendToLib(MessageTypes.Goodbye, [{}, 'com.fine.go.away.then']);
     await closePromise;
 
-    await openWamp(new MockTransportProvider());
+    await openWamp({}, new MockTransportProvider());
   });
 });
 
@@ -543,5 +544,37 @@ describe('misc event handling', () => {
   it('closes properly if a GOODBYE message is recevied', async () => {
     transportProvider.sendToLib(MessageTypes.Goodbye, [{}, 'com.some.reason']);
     await waitUntilPass(() => expect(wamp.isOpen).toBe(false));
+  });
+});
+
+describe('"uriBase" option', () => {
+  beforeEach(async () => {
+    await openWamp({ uriBase: 'com.uri.base' });
+  });
+
+  it('is respected for register()', async () => {
+    wamp.register('works', () => null);
+    expect(await transportProvider.transport.read()).toEqual(
+      [MessageTypes.Register, expect.any(Number), expect.any(Object), 'com.uri.base.works']
+    );
+  });
+
+  it('is respected for call()', async () => {
+    wamp.call('works');
+    expect(await transportProvider.transport.read()).toEqual([MessageTypes.Call, expect.any(Number), {}, 'com.uri.base.works', [], {}]);
+  });
+
+  it('is respected for subscribe()', async () => {
+    wamp.subscribe('works', () => null);
+    expect(await transportProvider.transport.read()).toEqual(
+      [MessageTypes.Subscribe, expect.any(Number), expect.any(Object), 'com.uri.base.works']
+    );
+  });
+
+  it('is respected for publish()', async () => {
+    wamp.publish('works');
+    expect(await transportProvider.transport.read()).toEqual(
+      [MessageTypes.Publish, expect.any(Number), {}, 'com.uri.base.works', [], {}]
+    );
   });
 });
