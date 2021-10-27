@@ -9,6 +9,7 @@ import { generateRandomInt, deferredPromise, SimpleEventEmitter } from './utils'
 export class Swampyer {
   private transport: Transport | undefined;
   private sessionId: number | undefined;
+  private baseUri?: string;
 
   private callRequestId = 1;
   private publishRequestId = 1;
@@ -36,6 +37,8 @@ export class Swampyer {
     } else if (this.transport) {
       throw new ConnectionOpenError('The connection is currently being opened');
     }
+
+    this.baseUri = options.uriBase;
 
     this.transport = transportProvider.transport;
     const deferred = deferredPromise<WelcomeDetails>();
@@ -129,9 +132,10 @@ export class Swampyer {
 
   async register(uri: string, handler: RegistrationHandler): Promise<number> {
     this.throwIfNotOpen();
+    const fullUri = this.getFullUri(uri);
     const requestId = this.registrationRequestId;
     this.registrationRequestId += 1;
-    const [, registrationId] = await this.sendRequest(MessageTypes.Register, [requestId, {}, uri], MessageTypes.Registered);
+    const [, registrationId] = await this.sendRequest(MessageTypes.Register, [requestId, {}, fullUri], MessageTypes.Registered);
     this.registrationHandlers[registrationId] = handler;
     return registrationId;
   }
@@ -146,16 +150,18 @@ export class Swampyer {
 
   async call(uri: string, args: unknown[] = [], kwargs: Object = {}): Promise<unknown> {
     this.throwIfNotOpen();
+    const fullUri = this.getFullUri(uri);
     const requestId = this.callRequestId;
     this.callRequestId += 1;
-    const [, , resultArray] = await this.sendRequest(MessageTypes.Call, [requestId, {}, uri, args, kwargs], MessageTypes.Result);
+    const [, , resultArray] = await this.sendRequest(MessageTypes.Call, [requestId, {}, fullUri, args, kwargs], MessageTypes.Result);
     return resultArray[0];
   }
 
   async subscribe(uri: string, handler: SubscriptionHandler): Promise<number> {
     this.throwIfNotOpen();
+    const fullUri = this.getFullUri(uri);
     const requestId = generateRandomInt();
-    const [, subscriptionId] = await this.sendRequest(MessageTypes.Subscribe, [requestId, {}, uri], MessageTypes.Subscribed);
+    const [, subscriptionId] = await this.sendRequest(MessageTypes.Subscribe, [requestId, {}, fullUri], MessageTypes.Subscribed);
     this.subscriptionHandlers[subscriptionId] = handler;
     return subscriptionId;
   }
@@ -169,10 +175,11 @@ export class Swampyer {
 
   async publish(uri: string, args: unknown[] = [], kwargs: Object = {}, options: PublishOptions = {}): Promise<void> {
     this.throwIfNotOpen();
+    const fullUri = this.getFullUri(uri);
     const requestId = this.publishRequestId;
     this.publishRequestId += 1;
 
-    const payload: MessageData[MessageTypes.Publish] = [requestId, options, uri, args, kwargs];
+    const payload: MessageData[MessageTypes.Publish] = [requestId, options, fullUri, args, kwargs];
     if (options.acknowledge) {
       await this.sendRequest(MessageTypes.Publish, payload, MessageTypes.Published);
     } else {
@@ -275,5 +282,9 @@ export class Swampyer {
     if (!this.isOpen) {
       throw new SwampyerError('The connection is not open');
     }
+  }
+
+  private getFullUri(uri: string) {
+    return this.baseUri ? `${this.baseUri}.${uri}` : uri;
   }
 }

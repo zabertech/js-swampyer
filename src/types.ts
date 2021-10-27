@@ -72,12 +72,27 @@ export type WelcomeDetails = {
 }
 
 export interface OpenOptions {
+  /**
+   * The realm to connect to on the WAMP server
+   */
   realm: string;
   /**
    * An identifier for this client connection which may be used by the WAMP server for logging
    * purposes
    */
   agent?: string;
+  /**
+   * This string will be prepended to all of your URI cased WAMP operations. This can be a
+   * convenient way to shorten the WAMP URIs by defining the common part of the WAMP URIs
+   * here.
+   * 
+   * The final URI that gets used for communicating with the WAMP server ends up being
+   * `{uriBase}.{URI of operation}`.
+   * 
+   * @example Setting this to `com.company.something` will allow you to shorten a `call()` to
+   * `com.company.something.my.fancy_registration` down to a `call()` to `my.fancy_registration`
+   */
+  uriBase?: string;
   /**
    * Optional authentication data
    *
