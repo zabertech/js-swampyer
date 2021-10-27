@@ -9,7 +9,7 @@ import { generateRandomInt, deferredPromise, SimpleEventEmitter } from './utils'
 export class Swampyer {
   private transport: Transport | undefined;
   private sessionId: number | undefined;
-  private baseUri?: string;
+  private uriBase?: string;
 
   private callRequestId = 1;
   private publishRequestId = 1;
@@ -38,7 +38,7 @@ export class Swampyer {
       throw new ConnectionOpenError('The connection is currently being opened');
     }
 
-    this.baseUri = options.uriBase;
+    this.uriBase = options.uriBase;
 
     this.transport = transportProvider.transport;
     const deferred = deferredPromise<WelcomeDetails>();
@@ -285,6 +285,6 @@ export class Swampyer {
   }
 
   private getFullUri(uri: string) {
-    return this.baseUri ? `${this.baseUri}.${uri}` : uri;
+    return this.uriBase ? `${this.uriBase}.${uri}` : uri;
   }
 }
