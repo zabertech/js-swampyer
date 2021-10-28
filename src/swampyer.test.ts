@@ -1,9 +1,8 @@
 /* eslint-disable @typescript-eslint/no-floating-promises */
-import { OpenOptions } from 'src';
 import { TransportError, AbortError, ConnectionOpenError, SwampyerOperationError, ConnectionClosedError } from './errors';
 import { Swampyer } from './swampyer';
 import { Transport, TransportProvider } from './transports/transport';
-import { MessageData, MessageTypes } from './types';
+import { MessageData, MessageTypes, OpenOptions } from './types';
 import { waitUntilPass } from './utils';
 
 class MockTransportProvider implements TransportProvider {
