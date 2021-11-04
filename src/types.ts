@@ -88,7 +88,7 @@ export interface OpenOptions {
    *
    * The final URI that gets used for communicating with the WAMP server ends up being
    * `{uriBase}.{URI of operation}`.
-   * 
+   *
    * It is also possible to disable the use of `uriBase` for a given WAMP operation by setting
    * the `withoutUriBase` option for the operations that support that option
    *
@@ -128,7 +128,7 @@ export interface OpenOptions {
 interface CommonOptions {
   /** If true, the `uriBase` will not be prepended to the provided URI for this operation */
   withoutUriBase?: boolean;
-
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
 }
 
