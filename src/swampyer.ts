@@ -2,7 +2,10 @@ import { AbortError, ConnectionOpenError, ConnectionClosedError, SwampyerError, 
 import type { Transport, TransportProvider } from './transports/transport';
 import {
   WampMessage, MessageData, MessageTypes, PublishOptions, RegistrationHandler, SubscriptionHandler, WelcomeDetails,
-  OpenOptions
+  OpenOptions,
+  RegisterOptions,
+  CallOptions,
+  SubscribeOptions
 } from './types';
 import { generateRandomInt, deferredPromise, SimpleEventEmitter } from './utils';
 
@@ -130,12 +133,12 @@ export class Swampyer {
     return deferred.promise;
   }
 
-  async register(uri: string, handler: RegistrationHandler): Promise<number> {
+  async register(uri: string, handler: RegistrationHandler, options: RegisterOptions = {}): Promise<number> {
     this.throwIfNotOpen();
-    const fullUri = this.getFullUri(uri);
+    const fullUri = options.withoutUriBase ? uri : this.getFullUri(uri);
     const requestId = this.registrationRequestId;
     this.registrationRequestId += 1;
-    const [, registrationId] = await this.sendRequest(MessageTypes.Register, [requestId, {}, fullUri], MessageTypes.Registered);
+    const [, registrationId] = await this.sendRequest(MessageTypes.Register, [requestId, options, fullUri], MessageTypes.Registered);
     this.registrationHandlers[registrationId] = handler;
     return registrationId;
   }
@@ -148,20 +151,20 @@ export class Swampyer {
     delete this.registrationHandlers[registrationId];
   }
 
-  async call(uri: string, args: unknown[] = [], kwargs: Object = {}): Promise<unknown> {
+  async call(uri: string, args: unknown[] = [], kwargs: Object = {}, options: CallOptions = {}): Promise<unknown> {
     this.throwIfNotOpen();
-    const fullUri = this.getFullUri(uri);
+    const fullUri = options.withoutUriBase ? uri : this.getFullUri(uri);
     const requestId = this.callRequestId;
     this.callRequestId += 1;
-    const [, , resultArray] = await this.sendRequest(MessageTypes.Call, [requestId, {}, fullUri, args, kwargs], MessageTypes.Result);
+    const [, , resultArray] = await this.sendRequest(MessageTypes.Call, [requestId, options, fullUri, args, kwargs], MessageTypes.Result);
     return resultArray[0];
   }
 
-  async subscribe(uri: string, handler: SubscriptionHandler): Promise<number> {
+  async subscribe(uri: string, handler: SubscriptionHandler, options: SubscribeOptions = {}): Promise<number> {
     this.throwIfNotOpen();
-    const fullUri = this.getFullUri(uri);
+    const fullUri = options.withoutUriBase ? uri : this.getFullUri(uri);
     const requestId = generateRandomInt();
-    const [, subscriptionId] = await this.sendRequest(MessageTypes.Subscribe, [requestId, {}, fullUri], MessageTypes.Subscribed);
+    const [, subscriptionId] = await this.sendRequest(MessageTypes.Subscribe, [requestId, options, fullUri], MessageTypes.Subscribed);
     this.subscriptionHandlers[subscriptionId] = handler;
     return subscriptionId;
   }
@@ -175,7 +178,7 @@ export class Swampyer {
 
   async publish(uri: string, args: unknown[] = [], kwargs: Object = {}, options: PublishOptions = {}): Promise<void> {
     this.throwIfNotOpen();
-    const fullUri = this.getFullUri(uri);
+    const fullUri = options.withoutUriBase ? uri : this.getFullUri(uri);
     const requestId = this.publishRequestId;
     this.publishRequestId += 1;
 

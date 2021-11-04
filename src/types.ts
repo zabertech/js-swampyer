@@ -88,6 +88,9 @@ export interface OpenOptions {
    *
    * The final URI that gets used for communicating with the WAMP server ends up being
    * `{uriBase}.{URI of operation}`.
+   * 
+   * It is also possible to disable the use of `uriBase` for a given WAMP operation by setting
+   * the `withoutUriBase` option for the operations that support that option
    *
    * @example Setting this to `com.company.something` will allow you to shorten a `call()` to
    * `com.company.something.my.fancy_registration` down to a `call()` to `my.fancy_registration`
@@ -122,7 +125,18 @@ export interface OpenOptions {
   };
 }
 
-export interface PublishOptions {
+interface CommonOptions {
+  /** If true, the `uriBase` will not be prepended to the provided URI for this operation */
+  withoutUriBase?: boolean;
+
+  [key: string]: any;
+}
+
+export type RegisterOptions = CommonOptions;
+export type CallOptions = CommonOptions;
+
+export type SubscribeOptions = CommonOptions;
+export interface PublishOptions extends CommonOptions {
   /**
    * Asks the WAMP server to acknowledge that the publish call has been fulfilled. `publish()`
    * will wait for the acknowledgement from the WAMP server if this option is set to `true`.
