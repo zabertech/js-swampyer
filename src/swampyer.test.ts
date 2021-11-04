@@ -546,7 +546,7 @@ describe('misc event handling', () => {
   });
 });
 
-describe('"uriBase" option', () => {
+describe('"uriBase" option during "open()"', () => {
   beforeEach(async () => {
     await openWamp({ uriBase: 'com.uri.base' });
   });
@@ -574,6 +574,40 @@ describe('"uriBase" option', () => {
     wamp.publish('works');
     expect(await transportProvider.transport.read()).toEqual(
       [MessageTypes.Publish, expect.any(Number), {}, 'com.uri.base.works', [], {}]
+    );
+  });
+});
+
+describe('"withoutUriBase" option during specific operations', () => {
+  beforeEach(async () => {
+    await openWamp({ uriBase: 'com.uri.base' });
+  });
+
+  it('is respected for register()', async () => {
+    wamp.register('com.uri.some_other_base.works', () => null, { withoutUriBase: true });
+    expect(await transportProvider.transport.read()).toEqual(
+      [MessageTypes.Register, expect.any(Number), expect.any(Object), 'com.uri.some_other_base.works']
+    );
+  });
+
+  it('is respected for call()', async () => {
+    wamp.call('com.uri.some_other_base.works', [], {}, { withoutUriBase: true });
+    expect(await transportProvider.transport.read()).toEqual([
+      MessageTypes.Call, expect.any(Number), expect.any(Object), 'com.uri.some_other_base.works', [], {}
+    ]);
+  });
+
+  it('is respected for subscribe()', async () => {
+    wamp.subscribe('com.uri.some_other_base.works', () => null, { withoutUriBase: true });
+    expect(await transportProvider.transport.read()).toEqual(
+      [MessageTypes.Subscribe, expect.any(Number), expect.any(Object), 'com.uri.some_other_base.works']
+    );
+  });
+
+  it('is respected for publish()', async () => {
+    wamp.publish('com.uri.some_other_base.works', [], {}, { withoutUriBase: true });
+    expect(await transportProvider.transport.read()).toEqual(
+      [MessageTypes.Publish, expect.any(Number), expect.any(Object), 'com.uri.some_other_base.works', [], {}]
     );
   });
 });
