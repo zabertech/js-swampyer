@@ -33,3 +33,21 @@ If a custom transport method or serialization method is required, then the libra
 Custom transport providers must be a class that implements the `TransportProvider` interface. This ensures that the class implements all the functions that the library needs in order to make use of the transport provider.
 
 See the implementation of `WebsocketJson` to get an idea of how to implement your own custom transport provider.
+
+## Usage on nodejs
+
+Some adjustments need to be made in order to get this library working in a Nodejs environment:
+- Install a websocket implementation for nodejs (here we use [`ws`](https://www.npmjs.com/package/ws) as an examples)
+- Run the following at the start of you nodejs code
+
+  ```js
+  const ws = require('ws');
+
+  // Other imports ...
+
+  global.WebSocket = ws;
+
+  // Any code that uses Swampyer ...
+  ```
+
+  - This will allow `WebsocketJson` transport provider to work properly in the node environment
