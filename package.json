@@ -1,6 +1,6 @@
 {
-  "name": "swampyer-js",
-  "version": "0.1.0",
+  "name": "swampyer",
+  "version": "1.0.0",
   "description": "A lightweight WAMP client implementing the WAMP v2 basic profile",
   "main": "lib/index.js",
   "module": "lib/index.js",

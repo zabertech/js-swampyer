@@ -1,5 +1,3 @@
-// TODO make sure that all usage of this type is justified
-
 export enum MessageTypes {
   Hello = 1,
   Welcome = 2,
@@ -56,7 +54,6 @@ export interface MessageData {
   [MessageTypes.Unregistered]: [requestId: number];
   [MessageTypes.Invocation]: [requestId: number, registrationId: number, details: Object, args: unknown[], kwargs: Object];
   [MessageTypes.Yield]: [requestId: number, options: Object, args: unknown[], kwargs: Object];
-  // TODO properly define the unknown[] types
 }
 
 export type SubscriptionHandler = (args: unknown[], kwargs: Object, details: Object) => void;
