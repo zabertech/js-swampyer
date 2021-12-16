@@ -133,22 +133,33 @@ describe('open()', () => {
     })]);
   });
 
-  it('throws an error if the transport is closed before a WAMP connection can be opened', async () => {
+  it('throws an error if the transport is closed before a WAMP connection can be opened. The close event is emiited', async () => {
+    const onClose = jest.fn();
+    wamp.closeEvent.addEventListener(onClose);
+
     const openPromise = wamp.open(transportProvider, { realm });
     await waitUntilPass(() => expect(transportProvider.isOpen).toBe(true));
     transportProvider.transport.close();
     await expect(openPromise).rejects.toThrow(TransportError);
+    expect(onClose).toBeCalledTimes(1);
   });
 
-  it('throws an error if the WAMP server sends an ABORT message', async () => {
+  it('throws an error if the WAMP server sends an ABORT message. The close event is emiited', async () => {
+    const onClose = jest.fn();
+    wamp.closeEvent.addEventListener(onClose);
+
     const openPromise = wamp.open(transportProvider, { realm });
     await waitUntilPass(() => expect(transportProvider.isOpen).toBe(true));
     expect(await transportProvider.transport.read()).toEqual([MessageTypes.Hello, realm, expect.any(Object)]);
     transportProvider.sendToLib(MessageTypes.Abort, ['some.error.happened', 'no reason at all']);
     await expect(openPromise).rejects.toThrow(AbortError);
+    expect(onClose).toBeCalledTimes(1);
   });
 
-  it('throws an error if the "auth.onChallenge" function has an error', async () => {
+  it('throws an error if the "auth.onChallenge" function has an error. The close event is emiited', async () => {
+    const onClose = jest.fn();
+    wamp.closeEvent.addEventListener(onClose);
+
     const openPromise = wamp.open(transportProvider, {
       realm, auth: {
         authId: 'amazing-test-man',
@@ -163,6 +174,7 @@ describe('open()', () => {
     expect(await transportProvider.transport.read()).toEqual([MessageTypes.Abort, expect.any(Object), 'wamp.error.cannot_authenticate']);
 
     await expect(openPromise).rejects.toThrow(AbortError);
+    expect(onClose).toBeCalledTimes(1);
   });
 
   it('throws an error if we try to call "open()" again while the connection is already open. The transport is not opened', async () => {
