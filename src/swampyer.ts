@@ -103,7 +103,7 @@ export class Swampyer {
         this._openEvent.emit(details);
       })
       .catch(error => {
-        this.resetState(error);
+        this.resetState(error, true);
       })
       .finally(() => {
         openListenerCleanup();
@@ -259,8 +259,8 @@ export class Swampyer {
     }
   }
 
-  private resetState(error?: Error) {
-    if (this.isOpen) {
+  private resetState(error?: Error, wasOpening?: boolean) {
+    if (this.isOpen || wasOpening) {
       this._closeEvent.emit(error);
     }
 
