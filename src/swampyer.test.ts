@@ -2,7 +2,7 @@
 import { TransportError, AbortError, ConnectionOpenError, SwampyerOperationError, ConnectionClosedError } from './errors';
 import { Swampyer } from './swampyer';
 import { Transport, TransportProvider } from './transports/transport';
-import { MessageData, MessageTypes, OpenOptions } from './types';
+import { CloseDetails, CloseReason, MessageData, MessageTypes, OpenOptions } from './types';
 import { waitUntilPass } from './utils';
 
 class MockTransportProvider implements TransportProvider {
@@ -142,6 +142,7 @@ describe('open()', () => {
     transportProvider.transport.close();
     await expect(openPromise).rejects.toThrow(TransportError);
     expect(onClose).toBeCalledTimes(1);
+    expect(onClose).toBeCalledWith<[CloseReason, CloseDetails]>('open_error', { error: expect.any(Error) });
   });
 
   it('throws an error if the WAMP server sends an ABORT message. The close event is emiited', async () => {
@@ -154,6 +155,7 @@ describe('open()', () => {
     transportProvider.sendToLib(MessageTypes.Abort, ['some.error.happened', 'no reason at all']);
     await expect(openPromise).rejects.toThrow(AbortError);
     expect(onClose).toBeCalledTimes(1);
+    expect(onClose).toBeCalledWith<[CloseReason, CloseDetails]>('open_error', { error: expect.any(Error) });
   });
 
   it('throws an error if the "auth.onChallenge" function has an error. The close event is emiited', async () => {
@@ -175,6 +177,7 @@ describe('open()', () => {
 
     await expect(openPromise).rejects.toThrow(AbortError);
     expect(onClose).toBeCalledTimes(1);
+    expect(onClose).toBeCalledWith<[CloseReason, CloseDetails]>('open_error', { error: expect.any(Error) });
   });
 
   it('throws an error if we try to call "open()" again while the connection is already open. The transport is not opened', async () => {
@@ -219,6 +222,7 @@ describe('close()', () => {
     expect(wamp.isOpen).toBe(false);
     expect(transportProvider.transport.isClosed).toBe(true);
     expect(onClose).toBeCalledTimes(1);
+    expect(onClose).toBeCalledWith<[CloseReason, CloseDetails]>('close_method', {});
   });
 
   it('allows custom reason and message to be provided for why the connection is being closed', async () => {
@@ -547,14 +551,34 @@ describe('misc event handling', () => {
     await openWamp();
   });
 
-  it('closes properly if the transport gets closed or has an error', async () => {
+  it('closes properly if the transport gets closed', async () => {
+    const onClose = jest.fn();
+    wamp.closeEvent.addEventListener(onClose);
+
     transportProvider.transport.close();
     await waitUntilPass(() => expect(wamp.isOpen).toBe(false));
+    expect(onClose).toBeCalledTimes(1);
+    expect(onClose).toBeCalledWith<[CloseReason, CloseDetails]>('transport_close', {});
+  });
+
+  it('closes properly if the transport gets closed with an error', async () => {
+    const onClose = jest.fn();
+    wamp.closeEvent.addEventListener(onClose);
+
+    transportProvider.transport.close(new Error('some error'));
+    await waitUntilPass(() => expect(wamp.isOpen).toBe(false));
+    expect(onClose).toBeCalledTimes(1);
+    expect(onClose).toBeCalledWith<[CloseReason, CloseDetails]>('transport_error', { error: expect.any(Error) });
   });
 
   it('closes properly if a GOODBYE message is recevied', async () => {
+    const onClose = jest.fn();
+    wamp.closeEvent.addEventListener(onClose);
+
     transportProvider.sendToLib(MessageTypes.Goodbye, [{}, 'com.some.reason']);
     await waitUntilPass(() => expect(wamp.isOpen).toBe(false));
+    expect(onClose).toBeCalledTimes(1);
+    expect(onClose).toBeCalledWith<[CloseReason, CloseDetails]>('goodbye', { goodbye: { details: {}, reason: 'com.some.reason' } });
   });
 });
 
