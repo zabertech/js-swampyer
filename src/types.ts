@@ -1,3 +1,5 @@
+import { SwampyerError } from './errors';
+
 export enum MessageTypes {
   Hello = 1,
   Welcome = 2,
@@ -120,6 +122,17 @@ export interface OpenOptions {
      */
     onChallenge: (authMethod: string) => string;
   };
+}
+
+export type CloseReason = 'transport_error' | 'transport_close' | 'open_error' | 'goodbye' | 'close_method';
+export interface CloseDetails {
+  /** This value will only be defined if the connection was closed due to some error */
+  error?: SwampyerError,
+  /** This value will only be defined if the connection was closed due to a GOODBYE event */
+  goodbye?: {
+    reason: string,
+    details: any
+  }
 }
 
 interface CommonOptions {
