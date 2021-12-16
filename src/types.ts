@@ -127,12 +127,12 @@ export interface OpenOptions {
 export type CloseReason = 'transport_error' | 'transport_close' | 'open_error' | 'goodbye' | 'close_method';
 export interface CloseDetails {
   /** This value will only be defined if the connection was closed due to some error */
-  error?: SwampyerError,
+  error?: SwampyerError;
   /** This value will only be defined if the connection was closed due to a GOODBYE event */
   goodbye?: {
-    reason: string,
-    details: any
-  }
+    reason: string;
+    details: Object;
+  };
 }
 
 interface CommonOptions {
