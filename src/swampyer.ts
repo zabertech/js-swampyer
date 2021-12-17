@@ -2,12 +2,7 @@ import { AbortError, ConnectionOpenError, ConnectionClosedError, SwampyerError, 
 import type { Transport, TransportProvider } from './transports/transport';
 import {
   WampMessage, MessageData, MessageTypes, PublishOptions, RegistrationHandler, SubscriptionHandler, WelcomeDetails,
-  OpenOptions,
-  RegisterOptions,
-  CallOptions,
-  SubscribeOptions,
-  CloseReason,
-  CloseDetails
+  OpenOptions, RegisterOptions, CallOptions, SubscribeOptions, CloseReason, CloseDetails
 } from './types';
 import { generateRandomInt, deferredPromise, SimpleEventEmitter } from './utils';
 
