@@ -17,7 +17,7 @@ class MockTransportProvider implements TransportProvider {
 
 const openOptions: OpenOptions = {
   realm: 'test-realm',
-}
+};
 
 let transportProvider: MockTransportProvider;
 let wamp: SwampyerAutoReconnect;
@@ -68,7 +68,7 @@ it('attempts reconnections when the WAMP connection can not be opened', async ()
   wamp.attemptOpen();
   await rejectWampConnection();
 
-  await waitUntilPass(() => expect(onClose).toBeCalledTimes(1))
+  await waitUntilPass(() => expect(onClose).toBeCalledTimes(1));
 
   expect(transportProviderFunc).toBeCalledTimes(1);
   jest.advanceTimersByTime(2);
@@ -100,7 +100,7 @@ it('attempts reconnections when the WAMP connection closes for some reason', asy
 it('optionally gets the delay for each reconnection attempt from the user defined function', async () => {
   jest.useFakeTimers();
   const transportProviderFunc = jest.fn(() => (transportProvider = new MockTransportProvider(), transportProvider));
-  const delayFunc = jest.fn(attempt => 77);
+  const delayFunc = jest.fn(() => 77);
   const onClose = jest.fn();
 
   wamp = new SwampyerAutoReconnect(openOptions, transportProviderFunc, delayFunc);
@@ -131,8 +131,8 @@ it('optionally gets the delay for each reconnection attempt from the user define
 
 it('does not attempt reconnection if the function to get the transport provider returns "null"', async () => {
   jest.useFakeTimers();
-  const transportProviderFunc = jest.fn(() => null)
-  const delayFunc = jest.fn(attempt => 1);
+  const transportProviderFunc = jest.fn(() => null);
+  const delayFunc = jest.fn(() => 1);
 
   wamp = new SwampyerAutoReconnect(openOptions, transportProviderFunc, delayFunc);
   wamp.attemptOpen();
@@ -179,10 +179,10 @@ it(`does not attempt reconnection if ${SwampyerAutoReconnect.prototype.close.nam
   wamp.attemptOpen();
   await acceptWampConnection();
 
-  wamp.close();
+  const closePromise = wamp.close();
   await transportProvider.transport.read();
   transportProvider.sendToLib(MessageTypes.Goodbye, [{}, 'com.fine.go.away.then']);
-  await waitUntilPass(() => expect(onClose).toBeCalledTimes(1));
+  await closePromise;
 
   jest.advanceTimersByTime(100);
 
