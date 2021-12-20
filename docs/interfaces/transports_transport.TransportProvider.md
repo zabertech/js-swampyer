@@ -24,10 +24,6 @@
 
 • **transport**: [`Transport`](../classes/transports_transport.Transport.md)
 
-#### Defined in
-
-[src/transports/transport.ts:6](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/transports/transport.ts#L6)
-
 ## Methods
 
 ### open
@@ -37,7 +33,3 @@
 #### Returns
 
 `void`
-
-#### Defined in
-
-[src/transports/transport.ts:5](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/transports/transport.ts#L5)

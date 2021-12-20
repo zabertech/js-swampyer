@@ -55,10 +55,6 @@
 
 [Swampyer](index.Swampyer.md).[constructor](index.Swampyer.md#constructor)
 
-#### Defined in
-
-[src/swampyer_auto_reconnect.ts:15](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/swampyer_auto_reconnect.ts#L15)
-
 ## Properties
 
 ### closeEvent
@@ -74,10 +70,6 @@
 #### Inherited from
 
 [Swampyer](index.Swampyer.md).[closeEvent](index.Swampyer.md#closeevent)
-
-#### Defined in
-
-[src/swampyer.ts:29](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/swampyer.ts#L29)
 
 ___
 
@@ -95,10 +87,6 @@ ___
 
 [Swampyer](index.Swampyer.md).[openEvent](index.Swampyer.md#openevent)
 
-#### Defined in
-
-[src/swampyer.ts:28](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/swampyer.ts#L28)
-
 ## Accessors
 
 ### isOpen
@@ -113,10 +101,6 @@ ___
 
 Swampyer.isOpen
 
-#### Defined in
-
-[src/swampyer.ts:31](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/swampyer.ts#L31)
-
 ## Methods
 
 ### attemptOpen
@@ -129,10 +113,6 @@ open operation fails or if the connection closes at any point.
 #### Returns
 
 `void`
-
-#### Defined in
-
-[src/swampyer_auto_reconnect.ts:51](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/swampyer_auto_reconnect.ts#L51)
 
 ___
 
@@ -157,10 +137,6 @@ ___
 
 [Swampyer](index.Swampyer.md).[call](index.Swampyer.md#call)
 
-#### Defined in
-
-[src/swampyer.ts:155](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/swampyer.ts#L155)
-
 ___
 
 ### close
@@ -181,10 +157,6 @@ ___
 #### Inherited from
 
 [Swampyer](index.Swampyer.md).[close](index.Swampyer.md#close)
-
-#### Defined in
-
-[src/swampyer.ts:116](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/swampyer.ts#L116)
 
 ___
 
@@ -207,10 +179,6 @@ This function is not supported on this class. Please use [attemptOpen](index.Swa
 #### Overrides
 
 [Swampyer](index.Swampyer.md).[open](index.Swampyer.md#open)
-
-#### Defined in
-
-[src/swampyer_auto_reconnect.ts:43](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/swampyer_auto_reconnect.ts#L43)
 
 ___
 
@@ -235,10 +203,6 @@ ___
 
 [Swampyer](index.Swampyer.md).[publish](index.Swampyer.md#publish)
 
-#### Defined in
-
-[src/swampyer.ts:180](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/swampyer.ts#L180)
-
 ___
 
 ### register
@@ -260,10 +224,6 @@ ___
 #### Inherited from
 
 [Swampyer](index.Swampyer.md).[register](index.Swampyer.md#register)
-
-#### Defined in
-
-[src/swampyer.ts:137](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/swampyer.ts#L137)
 
 ___
 
@@ -287,10 +247,6 @@ ___
 
 [Swampyer](index.Swampyer.md).[subscribe](index.Swampyer.md#subscribe)
 
-#### Defined in
-
-[src/swampyer.ts:164](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/swampyer.ts#L164)
-
 ___
 
 ### unregister
@@ -311,10 +267,6 @@ ___
 
 [Swampyer](index.Swampyer.md).[unregister](index.Swampyer.md#unregister)
 
-#### Defined in
-
-[src/swampyer.ts:147](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/swampyer.ts#L147)
-
 ___
 
 ### unsubscribe
@@ -334,7 +286,3 @@ ___
 #### Inherited from
 
 [Swampyer](index.Swampyer.md).[unsubscribe](index.Swampyer.md#unsubscribe)
-
-#### Defined in
-
-[src/swampyer.ts:173](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/swampyer.ts#L173)

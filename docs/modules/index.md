@@ -39,29 +39,17 @@
 
 Ƭ **CallOptions**: `CommonOptions`
 
-#### Defined in
-
-[src/types.ts:146](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/types.ts#L146)
-
 ___
 
 ### CloseReason
 
 Ƭ **CloseReason**: ``"transport_error"`` \| ``"transport_close"`` \| ``"open_error"`` \| ``"goodbye"`` \| ``"close_method"``
 
-#### Defined in
-
-[src/types.ts:127](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/types.ts#L127)
-
 ___
 
 ### RegisterOptions
 
 Ƭ **RegisterOptions**: `CommonOptions`
-
-#### Defined in
-
-[src/types.ts:145](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/types.ts#L145)
 
 ___
 
@@ -85,19 +73,11 @@ ___
 
 `void`
 
-#### Defined in
-
-[src/types.ts:62](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/types.ts#L62)
-
 ___
 
 ### SubscribeOptions
 
 Ƭ **SubscribeOptions**: `CommonOptions`
-
-#### Defined in
-
-[src/types.ts:148](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/types.ts#L148)
 
 ___
 
@@ -121,10 +101,6 @@ ___
 
 `void`
 
-#### Defined in
-
-[src/types.ts:61](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/types.ts#L61)
-
 ___
 
 ### WelcomeDetails
@@ -141,7 +117,3 @@ ___
 | `authrole` | `string` |
 | `realm?` | `string` |
 | `roles` | `Record`<`string`, `unknown`\> |
-
-#### Defined in
-
-[src/types.ts:64](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/types.ts#L64)

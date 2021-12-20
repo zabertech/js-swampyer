@@ -47,10 +47,6 @@
 
 [SwampyerError](index.SwampyerError.md).[constructor](index.SwampyerError.md#constructor)
 
-#### Defined in
-
-[src/errors.ts:31](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/errors.ts#L31)
-
 ## Properties
 
 ### details
@@ -67,10 +63,6 @@ ___
 
 [SwampyerError](index.SwampyerError.md).[message](index.SwampyerError.md#message)
 
-#### Defined in
-
-node_modules/typescript/lib/lib.es5.d.ts:974
-
 ___
 
 ### name
@@ -80,10 +72,6 @@ ___
 #### Inherited from
 
 [SwampyerError](index.SwampyerError.md).[name](index.SwampyerError.md#name)
-
-#### Defined in
-
-node_modules/typescript/lib/lib.es5.d.ts:973
 
 ___
 
@@ -100,10 +88,6 @@ ___
 #### Inherited from
 
 [SwampyerError](index.SwampyerError.md).[stack](index.SwampyerError.md#stack)
-
-#### Defined in
-
-node_modules/typescript/lib/lib.es5.d.ts:975
 
 ___
 
@@ -134,10 +118,6 @@ Optional override for formatting stack traces
 
 [SwampyerError](index.SwampyerError.md).[prepareStackTrace](index.SwampyerError.md#preparestacktrace)
 
-#### Defined in
-
-node_modules/@types/node/globals.d.ts:11
-
 ___
 
 ### stackTraceLimit
@@ -147,10 +127,6 @@ ___
 #### Inherited from
 
 [SwampyerError](index.SwampyerError.md).[stackTraceLimit](index.SwampyerError.md#stacktracelimit)
-
-#### Defined in
-
-node_modules/@types/node/globals.d.ts:13
 
 ## Methods
 
@@ -174,7 +150,3 @@ Create .stack property on a target object
 #### Inherited from
 
 [SwampyerError](index.SwampyerError.md).[captureStackTrace](index.SwampyerError.md#capturestacktrace)
-
-#### Defined in
-
-node_modules/@types/node/globals.d.ts:4

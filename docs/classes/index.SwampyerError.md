@@ -58,10 +58,6 @@
 
 Error.constructor
 
-#### Defined in
-
-node_modules/typescript/lib/lib.es5.d.ts:979
-
 ## Properties
 
 ### message
@@ -71,10 +67,6 @@ node_modules/typescript/lib/lib.es5.d.ts:979
 #### Inherited from
 
 Error.message
-
-#### Defined in
-
-node_modules/typescript/lib/lib.es5.d.ts:974
 
 ___
 
@@ -86,10 +78,6 @@ ___
 
 Error.name
 
-#### Defined in
-
-node_modules/typescript/lib/lib.es5.d.ts:973
-
 ___
 
 ### stack
@@ -99,10 +87,6 @@ ___
 #### Inherited from
 
 Error.stack
-
-#### Defined in
-
-node_modules/typescript/lib/lib.es5.d.ts:975
 
 ___
 
@@ -133,10 +117,6 @@ Optional override for formatting stack traces
 
 Error.prepareStackTrace
 
-#### Defined in
-
-node_modules/@types/node/globals.d.ts:11
-
 ___
 
 ### stackTraceLimit
@@ -146,10 +126,6 @@ ___
 #### Inherited from
 
 Error.stackTraceLimit
-
-#### Defined in
-
-node_modules/@types/node/globals.d.ts:13
 
 ## Methods
 
@@ -173,7 +149,3 @@ Create .stack property on a target object
 #### Inherited from
 
 Error.captureStackTrace
-
-#### Defined in
-
-node_modules/@types/node/globals.d.ts:4

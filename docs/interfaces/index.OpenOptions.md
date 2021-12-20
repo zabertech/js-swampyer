@@ -22,10 +22,6 @@
 An identifier for this client connection which may be used by the WAMP server for logging
 purposes
 
-#### Defined in
-
-[src/types.ts:82](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/types.ts#L82)
-
 ___
 
 ### auth
@@ -45,10 +41,6 @@ If this is not defined then the library will try to authenticate using the `anon
 | `authMethods` | `string`[] | Could be values like `anonymous`, `ticket`, `cookie`, etc.  Refer to your WAMP server's settings to find out which auth methods are supported. |
 | `onChallenge` | (`authMethod`: `string`) => `string` | - |
 
-#### Defined in
-
-[src/types.ts:104](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/types.ts#L104)
-
 ___
 
 ### realm
@@ -56,10 +48,6 @@ ___
 • **realm**: `string`
 
 The realm to connect to on the WAMP server
-
-#### Defined in
-
-[src/types.ts:77](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/types.ts#L77)
 
 ___
 
@@ -79,7 +67,3 @@ the `withoutUriBase` option for the operations that support that option
 
 **`example`** Setting this to `com.company.something` will allow you to shorten a `call()` to
 `com.company.something.my.fancy_registration` down to a `call()` to `my.fancy_registration`
-
-#### Defined in
-
-[src/types.ts:97](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/types.ts#L97)

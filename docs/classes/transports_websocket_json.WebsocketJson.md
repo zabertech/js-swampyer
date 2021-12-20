@@ -34,10 +34,6 @@
 | :------ | :------ |
 | `url` | `string` \| `URL` |
 
-#### Defined in
-
-[src/transports/websocket_json.ts:8](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/transports/websocket_json.ts#L8)
-
 ## Properties
 
 ### transport
@@ -47,10 +43,6 @@
 #### Implementation of
 
 [TransportProvider](../interfaces/transports_transport.TransportProvider.md).[transport](../interfaces/transports_transport.TransportProvider.md#transport)
-
-#### Defined in
-
-[src/transports/websocket_json.ts:6](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/transports/websocket_json.ts#L6)
 
 ## Methods
 
@@ -65,7 +57,3 @@
 #### Implementation of
 
 [TransportProvider](../interfaces/transports_transport.TransportProvider.md).[open](../interfaces/transports_transport.TransportProvider.md#open)
-
-#### Defined in
-
-[src/transports/websocket_json.ts:10](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/transports/websocket_json.ts#L10)

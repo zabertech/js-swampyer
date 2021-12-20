@@ -46,10 +46,6 @@
 | :------ | :------ |
 | `addEventListener` | (`callback`: (...`args`: [error?: Error]) => `void`) => () => `void` |
 
-#### Defined in
-
-[src/transports/transport.ts:24](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/transports/transport.ts#L24)
-
 ___
 
 ### messageEvent
@@ -61,10 +57,6 @@ ___
 | Name | Type |
 | :------ | :------ |
 | `addEventListener` | (`callback`: (...`args`: [message: WampMessage]) => `void`) => () => `void` |
-
-#### Defined in
-
-[src/transports/transport.ts:22](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/transports/transport.ts#L22)
 
 ___
 
@@ -78,10 +70,6 @@ ___
 | :------ | :------ |
 | `addEventListener` | (`callback`: (...`args`: []) => `void`) => () => `void` |
 
-#### Defined in
-
-[src/transports/transport.ts:23](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/transports/transport.ts#L23)
-
 ## Accessors
 
 ### isClosed
@@ -91,10 +79,6 @@ ___
 #### Returns
 
 `boolean`
-
-#### Defined in
-
-[src/transports/transport.ts:14](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/transports/transport.ts#L14)
 
 ## Methods
 
@@ -121,10 +105,6 @@ For use by the library
 
 `void`
 
-#### Defined in
-
-[src/transports/transport.ts:63](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/transports/transport.ts#L63)
-
 ___
 
 ### close
@@ -141,10 +121,6 @@ ___
 
 `void`
 
-#### Defined in
-
-[src/transports/transport.ts:50](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/transports/transport.ts#L50)
-
 ___
 
 ### open
@@ -154,10 +130,6 @@ ___
 #### Returns
 
 `void`
-
-#### Defined in
-
-[src/transports/transport.ts:46](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/transports/transport.ts#L46)
 
 ___
 
@@ -171,10 +143,6 @@ to read on this transport.
 #### Returns
 
 `Promise`<`WampMessage`\>
-
-#### Defined in
-
-[src/transports/transport.ts:30](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/transports/transport.ts#L30)
 
 ___
 
@@ -191,7 +159,3 @@ ___
 #### Returns
 
 `void`
-
-#### Defined in
-
-[src/transports/transport.ts:42](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/transports/transport.ts#L42)

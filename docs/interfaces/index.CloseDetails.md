@@ -19,10 +19,6 @@
 
 This value will only be defined if the connection was closed due to some error
 
-#### Defined in
-
-[src/types.ts:130](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/types.ts#L130)
-
 ___
 
 ### goodbye
@@ -37,7 +33,3 @@ This value will only be defined if the connection was closed due to a GOODBYE ev
 | :------ | :------ |
 | `details` | `Object` |
 | `reason` | `string` |
-
-#### Defined in
-
-[src/types.ts:132](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/types.ts#L132)
