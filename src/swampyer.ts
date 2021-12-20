@@ -78,7 +78,7 @@ export class Swampyer {
               const authData = options.auth.onChallenge(authMethod);
               this.transport!._send(MessageTypes.Authenticate, [authData, {}]);
             } catch (e) {
-              const details = { message: 'An exception occured in onChallenge handler' };
+              const details = { message: `An exception occured in onChallenge handler: ${String(e)}` };
               this.transport!._send(MessageTypes.Abort, [details, errorReason]);
               deferred.reject(new AbortError(errorReason, details));
             }
