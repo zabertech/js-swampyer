@@ -32,6 +32,8 @@ await this.wamp.open(new WebsocketJson('ws://localhost:8080/ws'), {
 // Use the `wamp` object for the WAMP operations
 ```
 
+More details about this class can be found [in the source code repository](docs/classes/index.Swampyer.md)
+
 ## `SwampyerAutoReconnect` class
 
 This is an alternate class that provides an automatic reconnection mechanism. It provides an `attemptOpen()` method in place of an `open()` method. If the connection can not be established on the first try or if the connection closes for some reason, then it will keep trying to reconnect until it succeeds or `wamp.close()` is called. 
@@ -75,6 +77,8 @@ wamp.openEvent.addEventListener(() => {
 })
 ```
 
+More details about this class can be found [in the source code repository](docs/classes/index.SwampyerAutoReconnect.md)
+
 ## Usage on nodejs
 
 Some adjustments need to be made in order to get this library working in a Nodejs environment:
@@ -106,3 +110,7 @@ If a custom transport method or serialization method is required, then the libra
 Custom transport providers must be a class that implements the `TransportProvider` interface. This ensures that the class implements all the functions that the library needs in order to make use of the transport provider.
 
 See the implementation of `WebsocketJson` to get an idea of how to implement your own custom transport provider.
+
+## Detailed documentation
+
+Detailed documentation can be found [in the source code repository](docs)
