@@ -49,7 +49,7 @@
 
 #### Defined in
 
-[src/errors.ts:21](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/errors.ts#L21)
+[src/errors.ts:21](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/errors.ts#L21)
 
 ## Properties
 

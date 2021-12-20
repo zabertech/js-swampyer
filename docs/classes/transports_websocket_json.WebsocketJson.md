@@ -36,7 +36,7 @@
 
 #### Defined in
 
-[src/transports/websocket_json.ts:8](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/transports/websocket_json.ts#L8)
+[src/transports/websocket_json.ts:8](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/transports/websocket_json.ts#L8)
 
 ## Properties
 
@@ -50,7 +50,7 @@
 
 #### Defined in
 
-[src/transports/websocket_json.ts:6](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/transports/websocket_json.ts#L6)
+[src/transports/websocket_json.ts:6](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/transports/websocket_json.ts#L6)
 
 ## Methods
 
@@ -68,4 +68,4 @@
 
 #### Defined in
 
-[src/transports/websocket_json.ts:10](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/transports/websocket_json.ts#L10)
+[src/transports/websocket_json.ts:10](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/transports/websocket_json.ts#L10)

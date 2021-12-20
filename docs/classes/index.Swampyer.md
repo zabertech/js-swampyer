@@ -56,7 +56,7 @@
 
 #### Defined in
 
-[src/swampyer.ts:29](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/swampyer.ts#L29)
+[src/swampyer.ts:29](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/swampyer.ts#L29)
 
 ___
 
@@ -72,7 +72,7 @@ ___
 
 #### Defined in
 
-[src/swampyer.ts:28](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/swampyer.ts#L28)
+[src/swampyer.ts:28](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/swampyer.ts#L28)
 
 ## Accessors
 
@@ -86,7 +86,7 @@ ___
 
 #### Defined in
 
-[src/swampyer.ts:31](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/swampyer.ts#L31)
+[src/swampyer.ts:31](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/swampyer.ts#L31)
 
 ## Methods
 
@@ -109,7 +109,7 @@ ___
 
 #### Defined in
 
-[src/swampyer.ts:155](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/swampyer.ts#L155)
+[src/swampyer.ts:155](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/swampyer.ts#L155)
 
 ___
 
@@ -130,7 +130,7 @@ ___
 
 #### Defined in
 
-[src/swampyer.ts:116](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/swampyer.ts#L116)
+[src/swampyer.ts:116](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/swampyer.ts#L116)
 
 ___
 
@@ -151,7 +151,7 @@ ___
 
 #### Defined in
 
-[src/swampyer.ts:35](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/swampyer.ts#L35)
+[src/swampyer.ts:35](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/swampyer.ts#L35)
 
 ___
 
@@ -174,7 +174,7 @@ ___
 
 #### Defined in
 
-[src/swampyer.ts:180](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/swampyer.ts#L180)
+[src/swampyer.ts:180](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/swampyer.ts#L180)
 
 ___
 
@@ -196,7 +196,7 @@ ___
 
 #### Defined in
 
-[src/swampyer.ts:137](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/swampyer.ts#L137)
+[src/swampyer.ts:137](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/swampyer.ts#L137)
 
 ___
 
@@ -218,7 +218,7 @@ ___
 
 #### Defined in
 
-[src/swampyer.ts:164](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/swampyer.ts#L164)
+[src/swampyer.ts:164](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/swampyer.ts#L164)
 
 ___
 
@@ -238,7 +238,7 @@ ___
 
 #### Defined in
 
-[src/swampyer.ts:147](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/swampyer.ts#L147)
+[src/swampyer.ts:147](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/swampyer.ts#L147)
 
 ___
 
@@ -258,4 +258,4 @@ ___
 
 #### Defined in
 
-[src/swampyer.ts:173](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/swampyer.ts#L173)
+[src/swampyer.ts:173](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/swampyer.ts#L173)

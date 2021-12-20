@@ -57,7 +57,7 @@
 
 #### Defined in
 
-[src/swampyer_auto_reconnect.ts:15](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/swampyer_auto_reconnect.ts#L15)
+[src/swampyer_auto_reconnect.ts:15](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/swampyer_auto_reconnect.ts#L15)
 
 ## Properties
 
@@ -77,7 +77,7 @@
 
 #### Defined in
 
-[src/swampyer.ts:29](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/swampyer.ts#L29)
+[src/swampyer.ts:29](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/swampyer.ts#L29)
 
 ___
 
@@ -97,7 +97,7 @@ ___
 
 #### Defined in
 
-[src/swampyer.ts:28](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/swampyer.ts#L28)
+[src/swampyer.ts:28](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/swampyer.ts#L28)
 
 ## Accessors
 
@@ -115,7 +115,7 @@ Swampyer.isOpen
 
 #### Defined in
 
-[src/swampyer.ts:31](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/swampyer.ts#L31)
+[src/swampyer.ts:31](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/swampyer.ts#L31)
 
 ## Methods
 
@@ -132,7 +132,7 @@ open operation fails or if the connection closes at any point.
 
 #### Defined in
 
-[src/swampyer_auto_reconnect.ts:51](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/swampyer_auto_reconnect.ts#L51)
+[src/swampyer_auto_reconnect.ts:51](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/swampyer_auto_reconnect.ts#L51)
 
 ___
 
@@ -159,7 +159,7 @@ ___
 
 #### Defined in
 
-[src/swampyer.ts:155](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/swampyer.ts#L155)
+[src/swampyer.ts:155](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/swampyer.ts#L155)
 
 ___
 
@@ -184,7 +184,7 @@ ___
 
 #### Defined in
 
-[src/swampyer.ts:116](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/swampyer.ts#L116)
+[src/swampyer.ts:116](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/swampyer.ts#L116)
 
 ___
 
@@ -210,7 +210,7 @@ This function is not supported on this class. Please use [attemptOpen](index.Swa
 
 #### Defined in
 
-[src/swampyer_auto_reconnect.ts:43](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/swampyer_auto_reconnect.ts#L43)
+[src/swampyer_auto_reconnect.ts:43](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/swampyer_auto_reconnect.ts#L43)
 
 ___
 
@@ -237,7 +237,7 @@ ___
 
 #### Defined in
 
-[src/swampyer.ts:180](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/swampyer.ts#L180)
+[src/swampyer.ts:180](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/swampyer.ts#L180)
 
 ___
 
@@ -263,7 +263,7 @@ ___
 
 #### Defined in
 
-[src/swampyer.ts:137](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/swampyer.ts#L137)
+[src/swampyer.ts:137](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/swampyer.ts#L137)
 
 ___
 
@@ -289,7 +289,7 @@ ___
 
 #### Defined in
 
-[src/swampyer.ts:164](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/swampyer.ts#L164)
+[src/swampyer.ts:164](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/swampyer.ts#L164)
 
 ___
 
@@ -313,7 +313,7 @@ ___
 
 #### Defined in
 
-[src/swampyer.ts:147](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/swampyer.ts#L147)
+[src/swampyer.ts:147](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/swampyer.ts#L147)
 
 ___
 
@@ -337,4 +337,4 @@ ___
 
 #### Defined in
 
-[src/swampyer.ts:173](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/swampyer.ts#L173)
+[src/swampyer.ts:173](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/swampyer.ts#L173)

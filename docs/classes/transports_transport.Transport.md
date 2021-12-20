@@ -48,7 +48,7 @@
 
 #### Defined in
 
-[src/transports/transport.ts:24](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/transports/transport.ts#L24)
+[src/transports/transport.ts:24](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/transports/transport.ts#L24)
 
 ___
 
@@ -64,7 +64,7 @@ ___
 
 #### Defined in
 
-[src/transports/transport.ts:22](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/transports/transport.ts#L22)
+[src/transports/transport.ts:22](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/transports/transport.ts#L22)
 
 ___
 
@@ -80,7 +80,7 @@ ___
 
 #### Defined in
 
-[src/transports/transport.ts:23](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/transports/transport.ts#L23)
+[src/transports/transport.ts:23](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/transports/transport.ts#L23)
 
 ## Accessors
 
@@ -94,7 +94,7 @@ ___
 
 #### Defined in
 
-[src/transports/transport.ts:14](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/transports/transport.ts#L14)
+[src/transports/transport.ts:14](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/transports/transport.ts#L14)
 
 ## Methods
 
@@ -123,7 +123,7 @@ For use by the library
 
 #### Defined in
 
-[src/transports/transport.ts:63](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/transports/transport.ts#L63)
+[src/transports/transport.ts:63](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/transports/transport.ts#L63)
 
 ___
 
@@ -143,7 +143,7 @@ ___
 
 #### Defined in
 
-[src/transports/transport.ts:50](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/transports/transport.ts#L50)
+[src/transports/transport.ts:50](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/transports/transport.ts#L50)
 
 ___
 
@@ -157,7 +157,7 @@ ___
 
 #### Defined in
 
-[src/transports/transport.ts:46](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/transports/transport.ts#L46)
+[src/transports/transport.ts:46](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/transports/transport.ts#L46)
 
 ___
 
@@ -174,7 +174,7 @@ to read on this transport.
 
 #### Defined in
 
-[src/transports/transport.ts:30](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/transports/transport.ts#L30)
+[src/transports/transport.ts:30](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/transports/transport.ts#L30)
 
 ___
 
@@ -194,4 +194,4 @@ ___
 
 #### Defined in
 
-[src/transports/transport.ts:42](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/transports/transport.ts#L42)
+[src/transports/transport.ts:42](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/transports/transport.ts#L42)

@@ -28,7 +28,7 @@ will wait for the acknowledgement from the WAMP server if this option is set to 
 
 #### Defined in
 
-[src/types.ts:154](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/types.ts#L154)
+[src/types.ts:154](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/types.ts#L154)
 
 ___
 
@@ -44,4 +44,4 @@ CommonOptions.withoutUriBase
 
 #### Defined in
 
-[src/types.ts:140](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/types.ts#L140)
+[src/types.ts:140](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/types.ts#L140)

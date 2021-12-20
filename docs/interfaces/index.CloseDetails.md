@@ -21,7 +21,7 @@ This value will only be defined if the connection was closed due to some error
 
 #### Defined in
 
-[src/types.ts:130](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/types.ts#L130)
+[src/types.ts:130](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/types.ts#L130)
 
 ___
 
@@ -40,4 +40,4 @@ This value will only be defined if the connection was closed due to a GOODBYE ev
 
 #### Defined in
 
-[src/types.ts:132](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/types.ts#L132)
+[src/types.ts:132](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/types.ts#L132)

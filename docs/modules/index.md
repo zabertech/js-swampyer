@@ -41,7 +41,7 @@
 
 #### Defined in
 
-[src/types.ts:146](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/types.ts#L146)
+[src/types.ts:146](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/types.ts#L146)
 
 ___
 
@@ -51,7 +51,7 @@ ___
 
 #### Defined in
 
-[src/types.ts:127](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/types.ts#L127)
+[src/types.ts:127](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/types.ts#L127)
 
 ___
 
@@ -61,7 +61,7 @@ ___
 
 #### Defined in
 
-[src/types.ts:145](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/types.ts#L145)
+[src/types.ts:145](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/types.ts#L145)
 
 ___
 
@@ -87,7 +87,7 @@ ___
 
 #### Defined in
 
-[src/types.ts:62](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/types.ts#L62)
+[src/types.ts:62](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/types.ts#L62)
 
 ___
 
@@ -97,7 +97,7 @@ ___
 
 #### Defined in
 
-[src/types.ts:148](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/types.ts#L148)
+[src/types.ts:148](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/types.ts#L148)
 
 ___
 
@@ -123,7 +123,7 @@ ___
 
 #### Defined in
 
-[src/types.ts:61](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/types.ts#L61)
+[src/types.ts:61](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/types.ts#L61)
 
 ___
 
@@ -144,4 +144,4 @@ ___
 
 #### Defined in
 
-[src/types.ts:64](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/types.ts#L64)
+[src/types.ts:64](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/types.ts#L64)

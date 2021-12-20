@@ -24,7 +24,7 @@ purposes
 
 #### Defined in
 
-[src/types.ts:82](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/types.ts#L82)
+[src/types.ts:82](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/types.ts#L82)
 
 ___
 
@@ -47,7 +47,7 @@ If this is not defined then the library will try to authenticate using the `anon
 
 #### Defined in
 
-[src/types.ts:104](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/types.ts#L104)
+[src/types.ts:104](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/types.ts#L104)
 
 ___
 
@@ -59,7 +59,7 @@ The realm to connect to on the WAMP server
 
 #### Defined in
 
-[src/types.ts:77](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/types.ts#L77)
+[src/types.ts:77](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/types.ts#L77)
 
 ___
 
@@ -82,4 +82,4 @@ the `withoutUriBase` option for the operations that support that option
 
 #### Defined in
 
-[src/types.ts:97](https://github.com/zaberSatnam/js-swampyer/blob/9cfd414/src/types.ts#L97)
+[src/types.ts:97](https://github.com/zaberSatnam/js-swampyer/blob/51c14e1/src/types.ts#L97)
