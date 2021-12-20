@@ -1,6 +1,6 @@
 {
   "name": "swampyer",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A lightweight WAMP client implementing the WAMP v2 basic profile",
   "main": "lib/index.js",
   "module": "lib/index.js",
@@ -8,13 +8,28 @@
   "files": [
     "lib"
   ],
+  "author": "Zaber Technologies Inc.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zaberTech/js-swampyer"
+  },
+  "bugs": {
+    "url": "https://github.com/zaberTech/js-swampyer/issues"
+  },
+  "homepage": "https://github.com/zaberTech/js-swampyer",
+  "keywords": [
+    "websocket",
+    "wamp",
+    "pubsub",
+    "rpc"
+  ],
   "scripts": {
     "build": "tsc --project tsconfig.build.json",
     "test": "jest",
-    "lint": "eslint --config .eslintrc.js \"src/**/*.{js,ts}\""
+    "lint": "eslint --config .eslintrc.js \"src/**/*.{js,ts}\"",
+    "gen-docs": "typedoc --out docs --excludePrivate --disableSources src src/transports/transport.ts src/transports/websocket_json.ts"
   },
-  "author": "Zaber Technologies Inc.",
-  "license": "MIT",
   "devDependencies": {
     "@types/jest": "^27.0.2",
     "@typescript-eslint/eslint-plugin": "^5.2.0",
@@ -22,6 +37,8 @@
     "eslint-plugin-import": "^2.25.2",
     "jest": "^27.2.5",
     "ts-jest": "^27.0.5",
+    "typedoc": "^0.22.10",
+    "typedoc-plugin-markdown": "^3.11.8",
     "typescript": "^4.4.3"
   }
 }

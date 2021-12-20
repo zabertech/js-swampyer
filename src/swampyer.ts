@@ -2,10 +2,7 @@ import { AbortError, ConnectionOpenError, ConnectionClosedError, SwampyerError, 
 import type { Transport, TransportProvider } from './transports/transport';
 import {
   WampMessage, MessageData, MessageTypes, PublishOptions, RegistrationHandler, SubscriptionHandler, WelcomeDetails,
-  OpenOptions,
-  RegisterOptions,
-  CallOptions,
-  SubscribeOptions
+  OpenOptions, RegisterOptions, CallOptions, SubscribeOptions, CloseReason, CloseDetails
 } from './types';
 import { generateRandomInt, deferredPromise, SimpleEventEmitter } from './utils';
 
@@ -13,6 +10,7 @@ export class Swampyer {
   private transport: Transport | undefined;
   private sessionId: number | undefined;
   private uriBase?: string;
+  private isClosing = false;
 
   private callRequestId = 1;
   private publishRequestId = 1;
@@ -25,7 +23,7 @@ export class Swampyer {
   private onCloseCleanup: (() => void)[] = [];
 
   private _openEvent = new SimpleEventEmitter<[WelcomeDetails]>();
-  private _closeEvent = new SimpleEventEmitter<[error?: SwampyerError]>();
+  private _closeEvent = new SimpleEventEmitter<[reason: CloseReason, details: CloseDetails]>();
 
   public readonly openEvent = this._openEvent.publicObject;
   public readonly closeEvent = this._closeEvent.publicObject;
@@ -80,7 +78,7 @@ export class Swampyer {
               const authData = options.auth.onChallenge(authMethod);
               this.transport!._send(MessageTypes.Authenticate, [authData, {}]);
             } catch (e) {
-              const details = { message: 'An exception occured in onChallenge handler' };
+              const details = { message: `An exception occured in onChallenge handler: ${String(e)}` };
               this.transport!._send(MessageTypes.Abort, [details, errorReason]);
               deferred.reject(new AbortError(errorReason, details));
             }
@@ -99,11 +97,13 @@ export class Swampyer {
     deferred.promise
       .then(details => {
         this.onCloseCleanup.push(this.transport!.messageEvent.addEventListener(this.handleEvents.bind(this)));
-        this.onCloseCleanup.push(this.transport!.closeEvent.addEventListener(error => this.resetState(error)));
+        this.onCloseCleanup.push(this.transport!.closeEvent.addEventListener(
+          error => this.resetState(error ? 'transport_error' : 'transport_close', { error })
+        ));
         this._openEvent.emit(details);
       })
       .catch(error => {
-        this.resetState(error);
+        this.resetState('open_error', { error });
       })
       .finally(() => {
         openListenerCleanup();
@@ -118,6 +118,7 @@ export class Swampyer {
       throw new SwampyerError('The connection is not open and can not be closed');
     }
 
+    this.isClosing = true;
     this.transport!._send(MessageTypes.Goodbye, [message ? { message } : {}, reason]);
     const deferred = deferredPromise<void>();
     const messageListenerCleanup = this.transport!.messageEvent.addEventListener(([messageType]) => {
@@ -128,7 +129,7 @@ export class Swampyer {
 
     deferred.promise.catch(() => { /* Not used */ }).finally(() => {
       messageListenerCleanup();
-      this.resetState();
+      this.resetState('close_method');
     });
     return deferred.promise;
   }
@@ -252,19 +253,23 @@ export class Swampyer {
         break;
       }
       case MessageTypes.Goodbye: {
-        this.transport!._send(MessageTypes.Goodbye, [{}, 'wamp.close.goodbye_and_out']);
-        this.resetState();
+        if (!this.isClosing) {
+          const [details, reason] = data as MessageData[MessageTypes.Goodbye];
+          this.transport!._send(MessageTypes.Goodbye, [{}, 'wamp.close.goodbye_and_out']);
+          this.resetState('goodbye', { goodbye: { details, reason } });
+        }
         break;
       }
     }
   }
 
-  private resetState(error?: Error) {
-    if (this.isOpen) {
-      this._closeEvent.emit(error);
+  private resetState(reason: CloseReason, details: CloseDetails = {}) {
+    if (this.isOpen || reason === 'open_error') {
+      this._closeEvent.emit(reason, details);
     }
 
     this.sessionId = undefined;
+    this.isClosing = false;
 
     this.onCloseCleanup.forEach(cleanupFunc => { cleanupFunc() });
     this.onCloseCleanup = [];

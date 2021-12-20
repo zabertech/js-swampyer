@@ -1,3 +1,5 @@
+swampyer / [Modules](modules.md)
+
 # js-swampyer
 
 A lightweight WAMP client that implements the [WAMP v2 basic profile](https://wamp-proto.org/_static/gen/wamp_latest.html)
