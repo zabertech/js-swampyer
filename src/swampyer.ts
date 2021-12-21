@@ -30,6 +30,7 @@ export class Swampyer {
 
   private _openEvent = new SimpleEventEmitter<[WelcomeDetails]>();
   private _closeEvent = new SimpleEventEmitter<CloseEventData>();
+  private _closeMethodCallEvent = new SimpleEventEmitter();
 
   public readonly openEvent = this._openEvent.publicObject;
   public readonly closeEvent = this._closeEvent.publicObject;
@@ -69,6 +70,7 @@ export class Swampyer {
           .catch(() => { /* Not used */ });
 
         const [closeReason, closeDetails] = await this.closeEvent.waitForNext();
+        this._isReconnecting = true;
 
         if (closeReason === 'close_method') {
           this._isReconnecting = false;
@@ -82,8 +84,14 @@ export class Swampyer {
           return;
         }
 
-        this._isReconnecting = true;
-        await new Promise(resolve => setTimeout(resolve, delay));
+        const raceResult = await Promise.race([
+          new Promise<'delay'>(resolve => setTimeout(() => resolve('delay'), delay)),
+          this._closeMethodCallEvent.waitForNext().then<'close_method'>(() => 'close_method'),
+        ]);
+        if (raceResult === 'close_method') {
+          this._isReconnecting = false;
+          return;
+        }
 
         transportProvider = getTransportProvider(attempt, closeReason, closeDetails);
       }
@@ -181,6 +189,12 @@ export class Swampyer {
   }
 
   async close(reason = 'wamp.close.system_shutdown', message?: string): Promise<void> {
+    if (this._isReconnecting) {
+      this._closeMethodCallEvent.emit();
+      this.resetState('close_method');
+      return;
+    }
+
     if (!this.isOpen) {
       throw new SwampyerError('The connection is not open and can not be closed');
     }
