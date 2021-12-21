@@ -50,7 +50,7 @@ async function openWamp(optionsOverride?: Partial<OpenOptions>, customTransportP
   return openPromise;
 }
 
-describe('open()', () => {
+describe(`${Swampyer.prototype.open.name}()`, () => {
   it('can establish an unauthenticated WAMP connection if no auth data is provided and emits on "openEvent"', async () => {
     const onOpen = jest.fn();
     wamp.openEvent.addEventListener(onOpen);
@@ -203,7 +203,7 @@ describe('open()', () => {
   });
 });
 
-describe('close()', () => {
+describe(`${Swampyer.prototype.close.name}()`, () => {
   beforeEach(async () => {
     await openWamp();
   });
@@ -240,7 +240,7 @@ describe('close()', () => {
   });
 });
 
-describe('register()', () => {
+describe(`${Swampyer.prototype.register.name}()`, () => {
   beforeEach(async () => {
     await openWamp();
   });
@@ -322,7 +322,7 @@ describe('register()', () => {
   });
 });
 
-describe('call()', () => {
+describe(`${Swampyer.prototype.call.name}()`, () => {
   const args = ['my_args'];
   const kwargs = { my: 'kwargs' };
 
@@ -355,7 +355,7 @@ describe('call()', () => {
   });
 });
 
-describe('unregister()', () => {
+describe(`${Swampyer.prototype.unregister.name}()`, () => {
   const regId = 1234;
 
   let handler: jest.Mock;
@@ -399,7 +399,7 @@ describe('unregister()', () => {
   });
 });
 
-describe('subscribe()', () => {
+describe(`${Swampyer.prototype.subscribe.name}()`, () => {
   beforeEach(async () => {
     await openWamp();
   });
@@ -469,7 +469,7 @@ describe('subscribe()', () => {
   });
 });
 
-describe('publish()', () => {
+describe(`${Swampyer.prototype.publish.name}()`, () => {
   beforeEach(async () => {
     await openWamp();
   });
@@ -506,7 +506,7 @@ describe('publish()', () => {
   });
 });
 
-describe('unsubscribe()', () => {
+describe(`${Swampyer.prototype.unsubscribe.name}()`, () => {
   const subId = 1234;
 
   let handler: jest.Mock;
