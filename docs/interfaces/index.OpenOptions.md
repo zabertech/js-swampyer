@@ -13,6 +13,10 @@
 - [realm](index.OpenOptions.md#realm)
 - [uriBase](index.OpenOptions.md#uribase)
 
+### Methods
+
+- [autoReconnectionDelay](index.OpenOptions.md#autoreconnectiondelay)
+
 ## Properties
 
 ### agent
@@ -67,3 +71,26 @@ the `withoutUriBase` option for the operations that support that option
 
 **`example`** Setting this to `com.company.something` will allow you to shorten a `call()` to
 `com.company.something.my.fancy_registration` down to a `call()` to `my.fancy_registration`
+
+## Methods
+
+### autoReconnectionDelay
+
+▸ `Optional` **autoReconnectionDelay**(`attempt`, ...`closeData`): ``null`` \| `number`
+
+Define a custom delay between reconnection attempts. If this function returns `null` or
+any number <= 0 then the library will no longer try to reconnect.
+
+If this function is not defined then the library will use a delay that increases with
+each successive reconnection attempt (up to a maximum of 32000ms)
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `attempt` | `number` |
+| `...closeData` | `CloseEventData` |
+
+#### Returns
+
+``null`` \| `number`
