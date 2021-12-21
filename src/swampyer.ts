@@ -42,13 +42,9 @@ export class Swampyer {
     return this._isReconnecting;
   }
 
-  constructor() {
-
-  }
-
   /**
    * Open a WAMP connection that will automatically reconnect in case of failure or closure.
-   * 
+   *
    * @param getTransportProvider A function that should return a fresh TransportProvider for each
    * reconnection attempt
    * @param options The options for configuring the WAMP connection
@@ -63,6 +59,7 @@ export class Swampyer {
       let attempt = 0;
       let transportProvider = getTransportProvider(attempt);
 
+      // eslint-disable-next-line no-constant-condition
       while (true) {
         this._open(transportProvider, options)
           .then(() => {
@@ -95,10 +92,10 @@ export class Swampyer {
 
   /**
    * Open a WAMP connection.
-   * 
+   *
    * The library will **not** try to automatically reconnect if the operation fails or if the
    * connection gets closed.
-   * 
+   *
    * @param transportProvider The transport provider to open the WAMP connection through
    * @param options The options for configuing the WAMP connection
    * @returns Details about the successful WAMP session
@@ -366,7 +363,7 @@ export class Swampyer {
     if (this.isOpen) {
       throw new ConnectionOpenError('The connection is already open');
     } else if (this._isReconnecting) {
-      throw new ConnectionOpenError('The connection is currently being automatically reconnected')
+      throw new ConnectionOpenError('The connection is currently being automatically reconnected');
     } else if (this.transport) {
       throw new ConnectionOpenError('The connection is currently being opened');
     }

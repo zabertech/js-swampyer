@@ -39,7 +39,7 @@ export class SimpleEventEmitter<Data extends unknown[] = []> {
     return new Promise<Data>(resolve => {
       const cleanup = this.addEventListener((...data) => {
         cleanup();
-        resolve(data)
+        resolve(data);
       });
     });
   }
