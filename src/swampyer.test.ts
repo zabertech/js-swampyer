@@ -228,6 +228,10 @@ describe(`${Swampyer.prototype.openAutoReconnect.name}()`, () => {
     return transportProvider;
   }
 
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   it('opens a WAMP connection', async () => {
     const transportProviderFunc = jest.fn(() => (transportProvider = new MockTransportProvider(), transportProvider));
     wamp = new Swampyer();
@@ -364,6 +368,29 @@ describe(`${Swampyer.prototype.openAutoReconnect.name}()`, () => {
     expect(onClose).toBeCalledTimes(1);
     expect(transportProviderFunc).toBeCalledTimes(1);
     expect(delayFunc).toBeCalledTimes(0);
+  });
+
+  it(`does not attempt reconnection if ${Swampyer.prototype.close.name}() is called while waiting for reconnection delay`, async () => {
+    jest.useFakeTimers();
+    const transportProviderFunc = jest.fn(() => getNewTransportProvider());
+    const delayFunc = jest.fn(() => 1);
+    const onClose = jest.fn();
+
+    wamp = new Swampyer();
+    wamp.closeEvent.addEventListener(onClose);
+    wamp.openAutoReconnect(transportProviderFunc, { ...openOptions, autoReconnectionDelay: delayFunc });
+    await rejectWampConnection();
+
+    await waitUntilPass(() => expect(wamp.isReconnecting).toBe(true));
+
+    await wamp.close();
+
+    await waitUntilPass(() => expect(onClose).toBeCalledTimes(1));
+    expect(transportProviderFunc).toBeCalledTimes(1);
+    jest.advanceTimersByTime(2);
+    await waitUntilPass(() => expect(wamp.isReconnecting).toBe(false));
+
+    expect(delayFunc).toBeCalledTimes(1);
   });
 
   it('throws an error if it is called when the connection is already open', async () => {
