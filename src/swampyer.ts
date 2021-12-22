@@ -8,7 +8,7 @@ import { generateRandomInt, deferredPromise, SimpleEventEmitter } from './utils'
 
 export const DEFAULT_RECONNECTION_DELAYS = [1, 10, 100, 1000, 2000, 4000, 8000, 16000, 32000];
 function defaultGetReconnectionDelay(attempt: number) {
-  return DEFAULT_RECONNECTION_DELAYS[Math.min(attempt, DEFAULT_RECONNECTION_DELAYS.length - 1)];
+  return DEFAULT_RECONNECTION_DELAYS[Math.min(attempt - 1, DEFAULT_RECONNECTION_DELAYS.length - 1)];
 }
 
 export class Swampyer {
@@ -47,7 +47,10 @@ export class Swampyer {
    * Open a WAMP connection that will automatically reconnect in case of failure or closure.
    *
    * @param getTransportProvider A function that should return a fresh TransportProvider for each
-   * reconnection attempt
+   * reconnection attempt.
+   * 
+   * The `attempt` argument for this callback will be `0` for the initial connection attempt.
+   * For all reconnection attempts, the `attempt` value will start from `1`.
    * @param options The options for configuring the WAMP connection
    */
   openAutoReconnect(
@@ -57,15 +60,15 @@ export class Swampyer {
     this.throwIfCannotOpen();
 
     void (async () => {
-      let attempt = 0;
-      let transportProvider = getTransportProvider(attempt);
+      let transportProvider = getTransportProvider(0);
+      let attempt = 1;
 
       // eslint-disable-next-line no-constant-condition
       while (true) {
         this._open(transportProvider, options)
           .then(() => {
             this._isReconnecting = false;
-            attempt = 0;
+            attempt = 1;
           })
           .catch(() => { /* Not used */ });
 
@@ -94,6 +97,7 @@ export class Swampyer {
         }
 
         transportProvider = getTransportProvider(attempt, closeReason, closeDetails);
+        attempt++;
       }
     })();
   }
