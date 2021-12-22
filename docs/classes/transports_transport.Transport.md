@@ -45,6 +45,7 @@
 | Name | Type |
 | :------ | :------ |
 | `addEventListener` | (`callback`: (...`args`: [error?: Error]) => `void`) => () => `void` |
+| `waitForNext` | () => `Promise`<[error?: Error]\> |
 
 ___
 
@@ -57,6 +58,7 @@ ___
 | Name | Type |
 | :------ | :------ |
 | `addEventListener` | (`callback`: (...`args`: [message: WampMessage]) => `void`) => () => `void` |
+| `waitForNext` | () => `Promise`<[message: WampMessage]\> |
 
 ___
 
@@ -69,6 +71,7 @@ ___
 | Name | Type |
 | :------ | :------ |
 | `addEventListener` | (`callback`: (...`args`: []) => `void`) => () => `void` |
+| `waitForNext` | () => `Promise`<[]\> |
 
 ## Accessors
 

@@ -1,85 +1,94 @@
 swampyer / [Modules](modules.md)
 
-# js-swampyer
+# swampyer
 
 A lightweight WAMP client that implements the [WAMP v2 basic profile](https://wamp-proto.org/_static/gen/wamp_latest.html)
 
 The library is highly promise based. Almost all available operations return a promise. However, it also allows for subscription to various events useful for monitoring the lifecycle of the WAMP connection.
 
-## `Swampyer` class
+**[API documentation](docs/modules.md)**
 
-Basic usage:
+## Installation
 
-```ts
-import { Swampyer } from 'swampyer';
-import { WebsocketJson } from 'swampyer/lib/transports/websocket_json';
-
-//...
-
-const wamp = new Swampyer();
-
-// Unauthenticated connection
-await wamp.open(new WebsocketJson('ws://localhost:8080/ws'), { realm: 'realm1' });
-
-// Authenticated connection
-await this.wamp.open(new WebsocketJson('ws://localhost:8080/ws'), {
-  realm: 'realm1',
-  auth: {
-    authId: '<some username here>',
-    authMethods: ['ticket'],
-    onChallenge: method => '<authentication for the user>',
-  }
-});
-
-// Use the `wamp` object for the WAMP operations
+```
+npm i swampyer
 ```
 
-More details about this class can be found [in the source code repository](docs/classes/index.Swampyer.md)
+## Examples
 
-## `SwampyerAutoReconnect` class
+- Open an unauthenticated connection without any automatic reconnection
 
-This is an alternate class that provides an automatic reconnection mechanism. It provides an `attemptOpen()` method in place of an `open()` method. If the connection can not be established on the first try or if the connection closes for some reason, then it will keep trying to reconnect until it succeeds or `wamp.close()` is called. 
+  ```ts
+  import { Swampyer } from 'swampyer';
+  import { WebsocketJson } from 'swampyer/lib/transports/websocket_json';
 
-Basic usage:
+  //...
 
-```ts
-import { Swampyer } from 'swampyer';
-import { WebsocketJson } from 'swampyer/lib/transports/websocket_json';
+  const wamp = new Swampyer();
+  await wamp.open(new WebsocketJson('ws://localhost:8080/ws'), { realm: 'realm1' });
 
-//...
-
-const wamp = new SwampyerAutoReconnect(
-  { realm: 'realm1' },
-  () => new WebsocketJson('ws://localhost:8080/ws')
-);
-wamp.attemptOpen();
-
-wamp.openEvent.addEventListener(() => {
   // Use the `wamp` object for the WAMP operations
-})
-```
+  ```
+- Open an authenticated connection without any automatic reconnection
 
-By default, the delay between each successive reconnection attempt increases up to a maximum of 32000ms. If you want to have more control over the delay between each reconnection attempt then you can use something like the following
+  ```ts
+  import { Swampyer } from 'swampyer';
+  import { WebsocketJson } from 'swampyer/lib/transports/websocket_json';
 
-```ts
-import { Swampyer } from 'swampyer';
-import { WebsocketJson } from 'swampyer/lib/transports/websocket_json';
+  //...
 
-//...
+  const wamp = new Swampyer();
+  await this.wamp.open(new WebsocketJson('ws://localhost:8080/ws'), {
+    realm: 'realm1',
+    auth: {
+      authId: '<some username here>',
+      authMethods: ['ticket'],
+      onChallenge: method => '<authentication for the user>',
+    }
+  });
 
-const wamp = new SwampyerAutoReconnect(
-  { realm: 'realm1' },
-  () => new WebsocketJson('ws://localhost:8080/ws'),
-  () => 1000 // The delay between each reconnection attempt will now be 1000ms
-);
-wamp.attemptOpen();
-
-wamp.openEvent.addEventListener(() => {
   // Use the `wamp` object for the WAMP operations
-})
-```
+  ```
+- Open an auto reconnecting unauthenticated connection. If the connection can not be established on the first try or if the connection closes for some reason, then it will keep trying to reconnect until it succeeds or `wamp.close()` is called. 
 
-More details about this class can be found [in the source code repository](docs/classes/index.SwampyerAutoReconnect.md)
+  ```ts
+  import { Swampyer } from 'swampyer';
+  import { WebsocketJson } from 'swampyer/lib/transports/websocket_json';
+
+  //...
+
+  const wamp = new Swampyer();
+  this.wamp.openAutoReconnect(
+    () => new WebsocketJson('ws://localhost:8080/ws')
+    { realm: 'realm1' }
+  );
+
+  wamp.openEvent.addEventListener(() => {
+    // Use the `wamp` object for the WAMP operations
+  });
+  ```
+
+- By default, the delay between each successive reconnection attempt increases pseudo-exponentially starting from 1ms up to a maximum of 32000ms. The following example sets the delay between reconnection attempts to 1000ms and stops the reconnection process on the 4th attmept
+
+  ```ts
+  import { Swampyer } from 'swampyer';
+  import { WebsocketJson } from 'swampyer/lib/transports/websocket_json';
+
+  //...
+
+  const wamp = new Swampyer();
+  this.wamp.openAutoReconnect(
+    () => new WebsocketJson('ws://localhost:8080/ws')
+    {
+      realm: 'realm1',
+      autoReconnectionDelay: (attempt) => attempt < 4 ? 1000 : null;
+    }
+  );
+
+  wamp.openEvent.addEventListener(() => {
+    // Use the `wamp` object for the WAMP operations
+  });
+  ```
 
 ## Usage on nodejs
 
@@ -112,7 +121,3 @@ If a custom transport method or serialization method is required, then the libra
 Custom transport providers must be a class that implements the `TransportProvider` interface. This ensures that the class implements all the functions that the library needs in order to make use of the transport provider.
 
 See the implementation of `WebsocketJson` to get an idea of how to implement your own custom transport provider.
-
-## Detailed documentation
-
-Detailed documentation can be found [in the source code repository](docs)

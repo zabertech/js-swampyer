@@ -10,7 +10,6 @@
 - [ConnectionClosedError](../classes/index.ConnectionClosedError.md)
 - [ConnectionOpenError](../classes/index.ConnectionOpenError.md)
 - [Swampyer](../classes/index.Swampyer.md)
-- [SwampyerAutoReconnect](../classes/index.SwampyerAutoReconnect.md)
 - [SwampyerError](../classes/index.SwampyerError.md)
 - [SwampyerOperationError](../classes/index.SwampyerOperationError.md)
 - [TimeoutError](../classes/index.TimeoutError.md)

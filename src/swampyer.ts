@@ -2,15 +2,21 @@ import { AbortError, ConnectionOpenError, ConnectionClosedError, SwampyerError, 
 import type { Transport, TransportProvider } from './transports/transport';
 import {
   WampMessage, MessageData, MessageTypes, PublishOptions, RegistrationHandler, SubscriptionHandler, WelcomeDetails,
-  OpenOptions, RegisterOptions, CallOptions, SubscribeOptions, CloseReason, CloseDetails
+  OpenOptions, RegisterOptions, CallOptions, SubscribeOptions, CloseReason, CloseDetails, CloseEventData
 } from './types';
 import { generateRandomInt, deferredPromise, SimpleEventEmitter } from './utils';
+
+export const DEFAULT_RECONNECTION_DELAYS = [1, 10, 100, 1000, 2000, 4000, 8000, 16000, 32000];
+function defaultGetReconnectionDelay(attempt: number) {
+  return DEFAULT_RECONNECTION_DELAYS[Math.min(attempt, DEFAULT_RECONNECTION_DELAYS.length - 1)];
+}
 
 export class Swampyer {
   private transport: Transport | undefined;
   private sessionId: number | undefined;
   private uriBase?: string;
   private isClosing = false;
+  private _isReconnecting = false;
 
   private callRequestId = 1;
   private publishRequestId = 1;
@@ -23,7 +29,8 @@ export class Swampyer {
   private onCloseCleanup: (() => void)[] = [];
 
   private _openEvent = new SimpleEventEmitter<[WelcomeDetails]>();
-  private _closeEvent = new SimpleEventEmitter<[reason: CloseReason, details: CloseDetails]>();
+  private _closeEvent = new SimpleEventEmitter<CloseEventData>();
+  private _closeMethodCallEvent = new SimpleEventEmitter();
 
   public readonly openEvent = this._openEvent.publicObject;
   public readonly closeEvent = this._closeEvent.publicObject;
@@ -32,13 +39,81 @@ export class Swampyer {
     return !!this.sessionId;
   }
 
-  async open(transportProvider: TransportProvider, options: OpenOptions): Promise<WelcomeDetails> {
-    if (this.isOpen) {
-      throw new ConnectionOpenError('The connection is already open');
-    } else if (this.transport) {
-      throw new ConnectionOpenError('The connection is currently being opened');
-    }
+  public get isReconnecting() {
+    return this._isReconnecting;
+  }
 
+  /**
+   * Open a WAMP connection that will automatically reconnect in case of failure or closure.
+   *
+   * @param getTransportProvider A function that should return a fresh TransportProvider for each
+   * reconnection attempt
+   * @param options The options for configuring the WAMP connection
+   */
+  openAutoReconnect(
+    getTransportProvider: (attempt: number, ...closeData: Partial<CloseEventData>) => TransportProvider,
+    options: OpenOptions
+  ): void {
+    this.throwIfCannotOpen();
+
+    void (async () => {
+      let attempt = 0;
+      let transportProvider = getTransportProvider(attempt);
+
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        this._open(transportProvider, options)
+          .then(() => {
+            this._isReconnecting = false;
+            attempt = 0;
+          })
+          .catch(() => { /* Not used */ });
+
+        const [closeReason, closeDetails] = await this.closeEvent.waitForNext();
+        this._isReconnecting = true;
+
+        if (closeReason === 'close_method') {
+          this._isReconnecting = false;
+          return;
+        }
+
+        const { autoReconnectionDelay = defaultGetReconnectionDelay } = options;
+        const delay = autoReconnectionDelay(attempt, closeReason, closeDetails);
+        if (delay == null) {
+          this._isReconnecting = false;
+          return;
+        }
+
+        const raceResult = await Promise.race([
+          new Promise<'delay'>(resolve => setTimeout(() => resolve('delay'), delay)),
+          this._closeMethodCallEvent.waitForNext().then<'close_method'>(() => 'close_method'),
+        ]);
+        if (raceResult === 'close_method') {
+          this._isReconnecting = false;
+          return;
+        }
+
+        transportProvider = getTransportProvider(attempt, closeReason, closeDetails);
+      }
+    })();
+  }
+
+  /**
+   * Open a WAMP connection.
+   *
+   * The library will **not** try to automatically reconnect if the operation fails or if the
+   * connection gets closed.
+   *
+   * @param transportProvider The transport provider to open the WAMP connection through
+   * @param options The options for configuing the WAMP connection
+   * @returns Details about the successful WAMP session
+   */
+  async open(transportProvider: TransportProvider, options: OpenOptions): Promise<WelcomeDetails> {
+    this.throwIfCannotOpen();
+    return this._open(transportProvider, options);
+  }
+
+  private async _open(transportProvider: TransportProvider, options: OpenOptions): Promise<WelcomeDetails> {
     this.uriBase = options.uriBase;
 
     this.transport = transportProvider.transport;
@@ -114,6 +189,12 @@ export class Swampyer {
   }
 
   async close(reason = 'wamp.close.system_shutdown', message?: string): Promise<void> {
+    if (this._isReconnecting) {
+      this._closeMethodCallEvent.emit();
+      this.resetState('close_method');
+      return;
+    }
+
     if (!this.isOpen) {
       throw new SwampyerError('The connection is not open and can not be closed');
     }
@@ -289,6 +370,16 @@ export class Swampyer {
   private throwIfNotOpen() {
     if (!this.isOpen) {
       throw new SwampyerError('The connection is not open');
+    }
+  }
+
+  private throwIfCannotOpen() {
+    if (this.isOpen) {
+      throw new ConnectionOpenError('The connection is already open');
+    } else if (this._isReconnecting) {
+      throw new ConnectionOpenError('The connection is currently being automatically reconnected');
+    } else if (this.transport) {
+      throw new ConnectionOpenError('The connection is currently being opened');
     }
   }
 

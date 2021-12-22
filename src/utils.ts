@@ -21,7 +21,10 @@ export class SimpleEventEmitter<Data extends unknown[] = []> {
   private callbackId = 1;
   private callbacks: Record<number, (...args: Data) => void> = {};
 
-  public readonly publicObject = { addEventListener: this.addEventListener.bind(this) };
+  public readonly publicObject = {
+    addEventListener: this.addEventListener.bind(this),
+    waitForNext: this.waitForNext.bind(this),
+  };
 
   addEventListener(callback: (...args: Data) => void) {
     const id = this.callbackId;
@@ -32,8 +35,19 @@ export class SimpleEventEmitter<Data extends unknown[] = []> {
     };
   }
 
+  async waitForNext(): Promise<Data> {
+    return new Promise<Data>(resolve => {
+      const cleanup = this.addEventListener((...data) => {
+        cleanup();
+        resolve(data);
+      });
+    });
+  }
+
   emit(...data: Data) {
-    Object.values(this.callbacks).forEach(callback => callback(...data));
+    void Promise.resolve(
+      Object.values(this.callbacks).forEach(callback => callback(...data))
+    );
   }
 }
 

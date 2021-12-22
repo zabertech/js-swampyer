@@ -122,6 +122,14 @@ export interface OpenOptions {
      */
     onChallenge: (authMethod: string) => string;
   };
+  /**
+   * Define a custom delay between reconnection attempts. If this function returns `null` or
+   * any number <= 0 then the library will no longer try to reconnect.
+   *
+   * If this function is not defined then the library will use a delay that increases with
+   * each successive reconnection attempt (up to a maximum of 32000ms)
+   */
+  autoReconnectionDelay?: (attempt: number, ...closeData: CloseEventData) => number | null;
 }
 
 export type CloseReason = 'transport_error' | 'transport_close' | 'open_error' | 'goodbye' | 'close_method';
@@ -134,6 +142,7 @@ export interface CloseDetails {
     details: Object;
   };
 }
+export type CloseEventData = [reason: CloseReason, details: CloseDetails];
 
 interface CommonOptions {
   /** If true, the `uriBase` will not be prepended to the provided URI for this operation */

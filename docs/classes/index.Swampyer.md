@@ -4,12 +4,6 @@
 
 [index](../modules/index.md).Swampyer
 
-## Hierarchy
-
-- **`Swampyer`**
-
-  ↳ [`SwampyerAutoReconnect`](index.SwampyerAutoReconnect.md)
-
 ## Table of contents
 
 ### Constructors
@@ -24,12 +18,14 @@
 ### Accessors
 
 - [isOpen](index.Swampyer.md#isopen)
+- [isReconnecting](index.Swampyer.md#isreconnecting)
 
 ### Methods
 
 - [call](index.Swampyer.md#call)
 - [close](index.Swampyer.md#close)
 - [open](index.Swampyer.md#open)
+- [openAutoReconnect](index.Swampyer.md#openautoreconnect)
 - [publish](index.Swampyer.md#publish)
 - [register](index.Swampyer.md#register)
 - [subscribe](index.Swampyer.md#subscribe)
@@ -52,7 +48,8 @@
 
 | Name | Type |
 | :------ | :------ |
-| `addEventListener` | (`callback`: (...`args`: [reason: CloseReason, details: CloseDetails]) => `void`) => () => `void` |
+| `addEventListener` | (`callback`: (...`args`: `CloseEventData`) => `void`) => () => `void` |
+| `waitForNext` | () => `Promise`<`CloseEventData`\> |
 
 ___
 
@@ -65,12 +62,23 @@ ___
 | Name | Type |
 | :------ | :------ |
 | `addEventListener` | (`callback`: (...`args`: [[`WelcomeDetails`](../modules/index.md#welcomedetails)]) => `void`) => () => `void` |
+| `waitForNext` | () => `Promise`<[[`WelcomeDetails`](../modules/index.md#welcomedetails)]\> |
 
 ## Accessors
 
 ### isOpen
 
 • `get` **isOpen**(): `boolean`
+
+#### Returns
+
+`boolean`
+
+___
+
+### isReconnecting
+
+• `get` **isReconnecting**(): `boolean`
 
 #### Returns
 
@@ -118,16 +126,42 @@ ___
 
 ▸ **open**(`transportProvider`, `options`): `Promise`<[`WelcomeDetails`](../modules/index.md#welcomedetails)\>
 
+Open a WAMP connection.
+
+The library will **not** try to automatically reconnect if the operation fails or if the
+connection gets closed.
+
 #### Parameters
 
-| Name | Type |
-| :------ | :------ |
-| `transportProvider` | [`TransportProvider`](../interfaces/transports_transport.TransportProvider.md) |
-| `options` | [`OpenOptions`](../interfaces/index.OpenOptions.md) |
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `transportProvider` | [`TransportProvider`](../interfaces/transports_transport.TransportProvider.md) | The transport provider to open the WAMP connection through |
+| `options` | [`OpenOptions`](../interfaces/index.OpenOptions.md) | The options for configuing the WAMP connection |
 
 #### Returns
 
 `Promise`<[`WelcomeDetails`](../modules/index.md#welcomedetails)\>
+
+Details about the successful WAMP session
+
+___
+
+### openAutoReconnect
+
+▸ **openAutoReconnect**(`getTransportProvider`, `options`): `void`
+
+Open a WAMP connection that will automatically reconnect in case of failure or closure.
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `getTransportProvider` | (`attempt`: `number`, ...`closeData`: [reason: CloseReason, details: CloseDetails]) => [`TransportProvider`](../interfaces/transports_transport.TransportProvider.md) | A function that should return a fresh TransportProvider for each reconnection attempt |
+| `options` | [`OpenOptions`](../interfaces/index.OpenOptions.md) | The options for configuring the WAMP connection |
+
+#### Returns
+
+`void`
 
 ___
 
