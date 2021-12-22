@@ -90,18 +90,22 @@ ___
 
 ▸ **call**(`uri`, `args?`, `kwargs?`, `options?`): `Promise`<`unknown`\>
 
+Call a WAMP URI and get its result
+
 #### Parameters
 
-| Name | Type | Default value |
-| :------ | :------ | :------ |
-| `uri` | `string` | `undefined` |
-| `args` | `unknown`[] | `[]` |
-| `kwargs` | `Object` | `{}` |
-| `options` | `CommonOptions` | `{}` |
+| Name | Type | Default value | Description |
+| :------ | :------ | :------ | :------ |
+| `uri` | `string` | `undefined` | The WAMP URI to call  If the `uriBase` options was defined when opening the connection then `uriBase` will be prepended to the provided URI (unless the appropriate value is set in `options`) |
+| `args` | `unknown`[] | `[]` | Positional arguments |
+| `kwargs` | `Object` | `{}` | Keyword arguments |
+| `options` | [`CommonOptions`](../interfaces/index.CommonOptions.md) | `{}` | Settings for how the registration should be done. This may vary between WAMP servers |
 
 #### Returns
 
 `Promise`<`unknown`\>
+
+Arbitrary data returned by the call operation
 
 ___
 
@@ -109,12 +113,14 @@ ___
 
 ▸ **close**(`reason?`, `message?`): `Promise`<`void`\>
 
+Close the WAMP connection
+
 #### Parameters
 
-| Name | Type | Default value |
-| :------ | :------ | :------ |
-| `reason` | `string` | `'wamp.close.system_shutdown'` |
-| `message?` | `string` | `undefined` |
+| Name | Type | Default value | Description |
+| :------ | :------ | :------ | :------ |
+| `reason` | `string` | `'wamp.close.system_shutdown'` | The reason for the closure |
+| `message?` | `string` | `undefined` | Some descriptive message about why the connection is being closed |
 
 #### Returns
 
@@ -156,7 +162,7 @@ Open a WAMP connection that will automatically reconnect in case of failure or c
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
-| `getTransportProvider` | (`attempt`: `number`, ...`closeData`: [reason: CloseReason, details: CloseDetails]) => [`TransportProvider`](../interfaces/transports_transport.TransportProvider.md) | A function that should return a fresh TransportProvider for each reconnection attempt |
+| `getTransportProvider` | (`attempt`: `number`, ...`closeData`: [reason: CloseReason, details: CloseDetails]) => [`TransportProvider`](../interfaces/transports_transport.TransportProvider.md) | A function that should return a fresh TransportProvider for each reconnection attempt.  The `attempt` argument for this callback will be `0` for the initial connection attempt. For all reconnection attempts, the `attempt` value will start from `1`. |
 | `options` | [`OpenOptions`](../interfaces/index.OpenOptions.md) | The options for configuring the WAMP connection |
 
 #### Returns
@@ -169,14 +175,16 @@ ___
 
 ▸ **publish**(`uri`, `args?`, `kwargs?`, `options?`): `Promise`<`void`\>
 
+Publish an event on the given WAMP URI
+
 #### Parameters
 
-| Name | Type | Default value |
-| :------ | :------ | :------ |
-| `uri` | `string` | `undefined` |
-| `args` | `unknown`[] | `[]` |
-| `kwargs` | `Object` | `{}` |
-| `options` | [`PublishOptions`](../interfaces/index.PublishOptions.md) | `{}` |
+| Name | Type | Default value | Description |
+| :------ | :------ | :------ | :------ |
+| `uri` | `string` | `undefined` | The WAMP URI to publish the event for  If the `uriBase` options was defined when opening the connection then `uriBase` will be prepended to the provided URI (unless the appropriate value is set in `options`) |
+| `args` | `unknown`[] | `[]` | Positional arguments |
+| `kwargs` | `Object` | `{}` | Keyword arguments |
+| `options` | [`PublishOptions`](../interfaces/index.PublishOptions.md) | `{}` | Settings for how the registration should be done. This may vary between WAMP servers |
 
 #### Returns
 
@@ -188,17 +196,21 @@ ___
 
 ▸ **register**(`uri`, `handler`, `options?`): `Promise`<`number`\>
 
+Register a callback for a WAMP URI
+
 #### Parameters
 
-| Name | Type |
-| :------ | :------ |
-| `uri` | `string` |
-| `handler` | [`RegistrationHandler`](../modules/index.md#registrationhandler) |
-| `options` | `CommonOptions` |
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `uri` | `string` | The URI to register for.  If the `uriBase` options was defined when opening the connection then `uriBase` will be prepended to the provided URI (unless the appropriate value is set in `options`) |
+| `handler` | [`RegistrationHandler`](../modules/index.md#registrationhandler) | The callback function that will handle invocations for this uri |
+| `options` | [`CommonOptions`](../interfaces/index.CommonOptions.md) | Settings for how the registration should be done. This may vary across WAMP servers |
 
 #### Returns
 
 `Promise`<`number`\>
+
+The registration ID (useful for unregistering)
 
 ___
 
@@ -206,17 +218,21 @@ ___
 
 ▸ **subscribe**(`uri`, `handler`, `options?`): `Promise`<`number`\>
 
+Subscribe to publish events on a given WAMP URI
+
 #### Parameters
 
-| Name | Type |
-| :------ | :------ |
-| `uri` | `string` |
-| `handler` | [`SubscriptionHandler`](../modules/index.md#subscriptionhandler) |
-| `options` | `CommonOptions` |
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `uri` | `string` | The URI to subscribe to  If the `uriBase` options was defined when opening the connection then `uriBase` will be prepended to the provided URI (unless the appropriate value is set in `options`) |
+| `handler` | [`SubscriptionHandler`](../modules/index.md#subscriptionhandler) | The callback function that will handle subscription events for this uri |
+| `options` | [`CommonOptions`](../interfaces/index.CommonOptions.md) | Settings for how the subscription should be done. This may vary across WAMP servers |
 
 #### Returns
 
 `Promise`<`number`\>
+
+The subscription ID (useful for unsubscribing)
 
 ___
 
@@ -224,11 +240,13 @@ ___
 
 ▸ **unregister**(`registrationId`): `Promise`<`void`\>
 
+Unregister an existing registration
+
 #### Parameters
 
-| Name | Type |
-| :------ | :------ |
-| `registrationId` | `number` |
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `registrationId` | `number` | The registration ID returned by [register()](index.Swampyer.md#register) |
 
 #### Returns
 
@@ -239,6 +257,8 @@ ___
 ### unsubscribe
 
 ▸ **unsubscribe**(`subscriptionId`): `Promise`<`void`\>
+
+Unsubscribe from an existing subscription
 
 #### Parameters
 

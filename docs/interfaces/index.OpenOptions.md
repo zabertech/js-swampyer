@@ -84,6 +84,8 @@ any number <= 0 then the library will no longer try to reconnect.
 If this function is not defined then the library will use a delay that increases with
 each successive reconnection attempt (up to a maximum of 32000ms)
 
+The `attempt` argument for the function will always be `>= 1`.
+
 #### Parameters
 
 | Name | Type |

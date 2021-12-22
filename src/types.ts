@@ -146,7 +146,7 @@ export interface CloseDetails {
 }
 export type CloseEventData = [reason: CloseReason, details: CloseDetails];
 
-interface CommonOptions {
+export interface CommonOptions {
   /** If true, the `uriBase` will not be prepended to the provided URI for this operation */
   withoutUriBase?: boolean;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

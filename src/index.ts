@@ -1,7 +1,7 @@
 export { Swampyer } from './swampyer';
 export type {
   OpenOptions,
-  RegisterOptions, CallOptions, SubscribeOptions, PublishOptions,
+  RegisterOptions, CallOptions, SubscribeOptions, PublishOptions, CommonOptions,
   WelcomeDetails,
   CloseReason, CloseDetails,
   SubscriptionHandler, RegistrationHandler
