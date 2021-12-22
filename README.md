@@ -66,7 +66,7 @@ npm i swampyer
   });
   ```
 
-- By default, the delay between each successive reconnection attempt increases pseudo-exponentially starting from 1ms up to a maximum of 32000ms. If you want to have more control over the delay between each reconnection attempt then you can use something like the following. THe following example sets the delay between reconnection attempts to 1000ms and stops the reconnection process on the 4th attmept
+- By default, the delay between each successive reconnection attempt increases pseudo-exponentially starting from 1ms up to a maximum of 32000ms. The following example sets the delay between reconnection attempts to 1000ms and stops the reconnection process on the 4th attmept
 
   ```ts
   import { Swampyer } from 'swampyer';
