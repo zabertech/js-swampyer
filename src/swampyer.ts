@@ -48,7 +48,7 @@ export class Swampyer {
    *
    * @param getTransportProvider A function that should return a fresh TransportProvider for each
    * reconnection attempt.
-   * 
+   *
    * The `attempt` argument for this callback will be `0` for the initial connection attempt.
    * For all reconnection attempts, the `attempt` value will start from `1`.
    * @param options The options for configuring the WAMP connection
@@ -192,6 +192,12 @@ export class Swampyer {
     return deferred.promise;
   }
 
+  /**
+   * Close the WAMP connection
+   *
+   * @param reason The reason for the closure
+   * @param message Some descriptive message about why the connection is being closed
+   */
   async close(reason = 'wamp.close.system_shutdown', message?: string): Promise<void> {
     if (this._isReconnecting) {
       this._closeMethodCallEvent.emit();
@@ -219,6 +225,17 @@ export class Swampyer {
     return deferred.promise;
   }
 
+  /**
+   * Register a callback for a WAMP URI
+   *
+   * @param uri The URI to register for.
+   *
+   * If the `uriBase` options was defined when opening the connection then `uriBase` will be
+   * prepended to the provided URI (unless the appropriate value is set in `options`)
+   * @param handler The callback function that will handle invocations for this uri
+   * @param options Settings for how the registration should be done. This may vary across WAMP servers
+   * @returns The registration ID (useful for unregistering)
+   */
   async register(uri: string, handler: RegistrationHandler, options: RegisterOptions = {}): Promise<number> {
     this.throwIfNotOpen();
     const fullUri = options.withoutUriBase ? uri : this.getFullUri(uri);
@@ -229,6 +246,11 @@ export class Swampyer {
     return registrationId;
   }
 
+  /**
+   * Unregister an existing registration
+   *
+   * @param registrationId The registration ID returned by {@link register register()}
+   */
   async unregister(registrationId: number): Promise<void> {
     this.throwIfNotOpen();
     const requestId = this.unregistrationRequestId;
@@ -237,6 +259,18 @@ export class Swampyer {
     delete this.registrationHandlers[registrationId];
   }
 
+  /**
+   * Call a WAMP URI and get its result
+   *
+   * @param uri The WAMP URI to call
+   *
+   * If the `uriBase` options was defined when opening the connection then `uriBase` will be
+   * prepended to the provided URI (unless the appropriate value is set in `options`)
+   * @param args Positional arguments
+   * @param kwargs Keyword arguments
+   * @param options Settings for how the registration should be done. This may vary between WAMP servers
+   * @returns Arbitrary data returned by the call operation
+   */
   async call(uri: string, args: unknown[] = [], kwargs: Object = {}, options: CallOptions = {}): Promise<unknown> {
     this.throwIfNotOpen();
     const fullUri = options.withoutUriBase ? uri : this.getFullUri(uri);
@@ -246,6 +280,17 @@ export class Swampyer {
     return resultArray[0];
   }
 
+  /**
+   * Subscribe to publish events on a given WAMP URI
+   *
+   * @param uri The URI to subscribe to
+   *
+   * If the `uriBase` options was defined when opening the connection then `uriBase` will be
+   * prepended to the provided URI (unless the appropriate value is set in `options`)
+   * @param handler The callback function that will handle subscription events for this uri
+   * @param options Settings for how the subscription should be done. This may vary across WAMP servers
+   * @returns The subscription ID (useful for unsubscribing)
+   */
   async subscribe(uri: string, handler: SubscriptionHandler, options: SubscribeOptions = {}): Promise<number> {
     this.throwIfNotOpen();
     const fullUri = options.withoutUriBase ? uri : this.getFullUri(uri);
@@ -255,6 +300,11 @@ export class Swampyer {
     return subscriptionId;
   }
 
+  /**
+   * Unsubscribe from an existing subscription
+   *
+   * @param registrationId The subscription ID returned by {@link subscribe subscribe()}
+   */
   async unsubscribe(subscriptionId: number): Promise<void> {
     this.throwIfNotOpen();
     const requestId = generateRandomInt();
@@ -262,6 +312,17 @@ export class Swampyer {
     delete this.subscriptionHandlers[subscriptionId];
   }
 
+  /**
+   * Publish an event on the given WAMP URI
+   *
+   * @param uri The WAMP URI to publish the event for
+   *
+   * If the `uriBase` options was defined when opening the connection then `uriBase` will be
+   * prepended to the provided URI (unless the appropriate value is set in `options`)
+   * @param args Positional arguments
+   * @param kwargs Keyword arguments
+   * @param options Settings for how the registration should be done. This may vary between WAMP servers
+   */
   async publish(uri: string, args: unknown[] = [], kwargs: Object = {}, options: PublishOptions = {}): Promise<void> {
     this.throwIfNotOpen();
     const fullUri = options.withoutUriBase ? uri : this.getFullUri(uri);

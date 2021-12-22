@@ -23,7 +23,7 @@ export class SimpleEventEmitter<Data extends unknown[] = []> {
 
   public readonly publicObject = {
     /** Add a callback function that will be called whenever a new event is emitted
-     * 
+     *
      * **Note**: Any exceptions that occur in the callback will not be propagated. So please make
      * sure exceptions are handled properly within the callback function itself
      */
@@ -53,7 +53,7 @@ export class SimpleEventEmitter<Data extends unknown[] = []> {
     Object.values(this.callbacks).forEach(callback => {
       try {
         callback(...data);
-      } catch(e) { /* Do nothing */ }
+      } catch (e) { /* Do nothing */ }
     });
   }
 }
