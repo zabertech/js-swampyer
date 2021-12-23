@@ -128,6 +128,8 @@ export interface OpenOptions {
    *
    * If this function is not defined then the library will use a delay that increases with
    * each successive reconnection attempt (up to a maximum of 32000ms)
+   *
+   * The `attempt` argument for the function will always be `>= 1`.
    */
   autoReconnectionDelay?: (attempt: number, ...closeData: CloseEventData) => number | null;
 }
@@ -144,7 +146,7 @@ export interface CloseDetails {
 }
 export type CloseEventData = [reason: CloseReason, details: CloseDetails];
 
-interface CommonOptions {
+export interface CommonOptions {
   /** If true, the `uriBase` will not be prepended to the provided URI for this operation */
   withoutUriBase?: boolean;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

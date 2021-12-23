@@ -6,7 +6,7 @@
 
 ## Hierarchy
 
-- `CommonOptions`
+- [`CommonOptions`](index.CommonOptions.md)
 
   ↳ **`PublishOptions`**
 
@@ -36,4 +36,4 @@ If true, the `uriBase` will not be prepended to the provided URI for this operat
 
 #### Inherited from
 
-CommonOptions.withoutUriBase
+[CommonOptions](index.CommonOptions.md).[withoutUriBase](index.CommonOptions.md#withouturibase)

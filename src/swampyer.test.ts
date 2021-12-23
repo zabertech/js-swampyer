@@ -243,16 +243,12 @@ describe(`${Swampyer.prototype.openAutoReconnect.name}()`, () => {
 
   it('attempts reconnections when the WAMP connection can not be opened', async () => {
     jest.useFakeTimers();
-    const onClose = jest.fn();
     const transportProviderFunc = jest.fn(() => getNewTransportProvider());
 
     wamp = new Swampyer();
-    wamp.closeEvent.addEventListener(onClose);
 
     wamp.openAutoReconnect(transportProviderFunc, openOptions);
     await rejectWampConnection();
-
-    await waitUntilPass(() => expect(onClose).toBeCalledTimes(1));
 
     expect(transportProviderFunc).toBeCalledTimes(1);
     await waitUntilPass(() => expect(wamp.isReconnecting).toBe(true));
@@ -391,6 +387,52 @@ describe(`${Swampyer.prototype.openAutoReconnect.name}()`, () => {
     await waitUntilPass(() => expect(wamp.isReconnecting).toBe(false));
 
     expect(delayFunc).toBeCalledTimes(1);
+  });
+
+  it('provides correct attempt number to callbacks and resets attempt number to 0 after a successful connection', async () => {
+    jest.useFakeTimers();
+    const transportProviderFunc = jest.fn(() => getNewTransportProvider());
+    const delayFunc = jest.fn(() => 1);
+    const onClose = jest.fn();
+
+    wamp = new Swampyer();
+    wamp.closeEvent.addEventListener(onClose);
+    wamp.openAutoReconnect(transportProviderFunc, { ...openOptions, autoReconnectionDelay: delayFunc });
+
+    await waitUntilPass(() => expect(transportProviderFunc).toBeCalledTimes(1));
+    expect(transportProviderFunc).lastCalledWith(0);
+    expect(delayFunc).toBeCalledTimes(0);
+    await rejectWampConnection();
+
+    await waitUntilPass(() => expect(onClose).toBeCalledTimes(1));
+    await waitUntilPass(() => expect(wamp.isReconnecting).toBe(true));
+    jest.advanceTimersByTime(2);
+    await waitUntilPass(() => expect(transportProviderFunc).toBeCalledTimes(2));
+    expect(transportProviderFunc).lastCalledWith(1, expect.any(String), expect.any(Object));
+    expect(delayFunc).toBeCalledTimes(1);
+    expect(delayFunc).lastCalledWith(1, expect.any(String), expect.any(Object));
+    await rejectWampConnection();
+
+    await waitUntilPass(() => expect(onClose).toBeCalledTimes(2));
+    await waitUntilPass(() => expect(wamp.isReconnecting).toBe(true));
+    jest.advanceTimersByTime(2);
+    await waitUntilPass(() => expect(transportProviderFunc).toBeCalledTimes(3));
+    expect(transportProviderFunc).lastCalledWith(2, expect.any(String), expect.any(Object));
+    expect(delayFunc).toBeCalledTimes(2);
+    expect(delayFunc).lastCalledWith(2, expect.any(String), expect.any(Object));
+    await acceptWampConnection();
+
+    await waitUntilPass(() => expect(wamp.isOpen).toBe(true));
+    transportProvider.transport.close();
+
+    await waitUntilPass(() => expect(onClose).toBeCalledTimes(3));
+    await waitUntilPass(() => expect(wamp.isReconnecting).toBe(true));
+    jest.advanceTimersByTime(2);
+    await waitUntilPass(() => expect(transportProviderFunc).toBeCalledTimes(4));
+    expect(transportProviderFunc).lastCalledWith(1, expect.any(String), expect.any(Object));
+    expect(delayFunc).toBeCalledTimes(3);
+    expect(delayFunc).lastCalledWith(1, expect.any(String), expect.any(Object));
+    await acceptWampConnection();
   });
 
   it('throws an error if it is called when the connection is already open', async () => {

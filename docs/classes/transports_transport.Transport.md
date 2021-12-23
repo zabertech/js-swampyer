@@ -89,7 +89,7 @@ ___
 
 ▸ **_send**<`T`\>(`messageType`, `data`): `void`
 
-For use by the library
+For use internally within the library
 
 #### Type parameters
 

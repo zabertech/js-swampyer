@@ -1,6 +1,6 @@
 {
   "name": "swampyer",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "A lightweight WAMP client implementing the WAMP v2 basic profile",
   "main": "lib/index.js",
   "module": "lib/index.js",
@@ -33,6 +33,7 @@
   "devDependencies": {
     "@types/jest": "^27.0.2",
     "@typescript-eslint/eslint-plugin": "^5.2.0",
+    "@typescript-eslint/parser": "^5.8.0",
     "eslint": "^8.1.0",
     "eslint-plugin-import": "^2.25.2",
     "jest": "^27.2.5",

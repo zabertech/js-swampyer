@@ -58,7 +58,7 @@ export class Transport {
   }
 
   /**
-   * For use by the library
+   * For use internally within the library
    */
   _send<T extends MessageTypes>(messageType: T, data: MessageData[T]) {
     const message: WampMessage = [messageType, ...data];

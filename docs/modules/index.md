@@ -19,6 +19,7 @@
 ### Interfaces
 
 - [CloseDetails](../interfaces/index.CloseDetails.md)
+- [CommonOptions](../interfaces/index.CommonOptions.md)
 - [OpenOptions](../interfaces/index.OpenOptions.md)
 - [PublishOptions](../interfaces/index.PublishOptions.md)
 
@@ -36,7 +37,7 @@
 
 ### CallOptions
 
-Ƭ **CallOptions**: `CommonOptions`
+Ƭ **CallOptions**: [`CommonOptions`](../interfaces/index.CommonOptions.md)
 
 ___
 
@@ -48,7 +49,7 @@ ___
 
 ### RegisterOptions
 
-Ƭ **RegisterOptions**: `CommonOptions`
+Ƭ **RegisterOptions**: [`CommonOptions`](../interfaces/index.CommonOptions.md)
 
 ___
 
@@ -76,7 +77,7 @@ ___
 
 ### SubscribeOptions
 
-Ƭ **SubscribeOptions**: `CommonOptions`
+Ƭ **SubscribeOptions**: [`CommonOptions`](../interfaces/index.CommonOptions.md)
 
 ___
 
