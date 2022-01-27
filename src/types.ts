@@ -122,16 +122,26 @@ export interface OpenOptions {
      */
     onChallenge: (authMethod: string) => string;
   };
+}
+
+export interface AutoReconnectionOpenOptions extends OpenOptions {
   /**
-   * Define a custom delay between reconnection attempts. If this function returns `null` or
-   * any number <= 0 then the library will no longer try to reconnect.
+   * Define a custom delay between reconnection attempts.
    *
    * If this function is not defined then the library will use a delay that increases with
    * each successive reconnection attempt (up to a maximum of 32000ms)
    *
    * The `attempt` argument for the function will always be `>= 1`.
    */
-  autoReconnectionDelay?: (attempt: number, ...closeData: CloseEventData) => number | null;
+  autoReconnectionDelay?: (attempt: number, ...closeData: CloseEventData) => number;
+  /**
+   * Control whether or not if the library should attempt an auto reconnection or not. Return
+   * `true` to stop any further auto reconnection attempts.
+   * 
+   * If this function is not defined then the library will keep trying to reconnect if
+   * connections are lost at any point.
+   */
+  stopAutoReconnection?: (attempt: number, ...closeData: CloseEventData) => boolean;
 }
 
 export type CloseReason = 'transport_error' | 'transport_close' | 'open_error' | 'goodbye' | 'close_method';
