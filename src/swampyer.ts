@@ -2,13 +2,16 @@ import { AbortError, ConnectionOpenError, ConnectionClosedError, SwampyerError, 
 import type { Transport, TransportProvider } from './transports/transport';
 import {
   WampMessage, MessageData, MessageTypes, PublishOptions, RegistrationHandler, SubscriptionHandler, WelcomeDetails,
-  OpenOptions, RegisterOptions, CallOptions, SubscribeOptions, CloseReason, CloseDetails, CloseEventData
+  OpenOptions, RegisterOptions, CallOptions, SubscribeOptions, CloseReason, CloseDetails, CloseEventData, AutoReconnectionOpenOptions
 } from './types';
 import { generateRandomInt, deferredPromise, SimpleEventEmitter } from './utils';
 
 export const DEFAULT_RECONNECTION_DELAYS = [1, 10, 100, 1000, 2000, 4000, 8000, 16000, 32000];
 function defaultGetReconnectionDelay(attempt: number) {
   return DEFAULT_RECONNECTION_DELAYS[Math.min(attempt - 1, DEFAULT_RECONNECTION_DELAYS.length - 1)];
+}
+function defaultStopAutoReconnection() {
+  return false;
 }
 
 export class Swampyer {
@@ -55,7 +58,7 @@ export class Swampyer {
    */
   openAutoReconnect(
     getTransportProvider: (attempt: number, ...closeData: Partial<CloseEventData>) => TransportProvider,
-    options: OpenOptions
+    options: AutoReconnectionOpenOptions
   ): void {
     this.throwIfCannotOpen();
 
@@ -80,9 +83,10 @@ export class Swampyer {
           return;
         }
 
-        const { autoReconnectionDelay = defaultGetReconnectionDelay } = options;
+        const { autoReconnectionDelay = defaultGetReconnectionDelay, stopAutoReconnection = defaultStopAutoReconnection } = options;
         const delay = autoReconnectionDelay(attempt, closeReason, closeDetails);
-        if (delay == null) {
+        const shouldStop = stopAutoReconnection(attempt, closeReason, closeDetails);
+        if (shouldStop) {
           this._isReconnecting = false;
           return;
         }
