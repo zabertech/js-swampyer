@@ -314,31 +314,31 @@ describe(`${Swampyer.prototype.openAutoReconnect.name}()`, () => {
     await waitUntilPass(() => expect(wamp.isReconnecting).toBe(false));
   });
 
-  it('does not attempt reconnection if the function to get delay returns "null"', async () => {
+  it('does not attempt reconnection if the function to stop auto reconnections returns true', async () => {
     jest.useFakeTimers();
     const transportProviderFunc = jest.fn(() => getNewTransportProvider());
-    const delayFunc = jest.fn(() => null);
+    const stopAutoReconnection = jest.fn(() => true);
     const onClose = jest.fn();
 
     wamp = new Swampyer();
     wamp.closeEvent.addEventListener(onClose);
-    wamp.openAutoReconnect(transportProviderFunc, { ...openOptions, autoReconnectionDelay: delayFunc });
+    wamp.openAutoReconnect(transportProviderFunc, { ...openOptions, stopAutoReconnection });
 
     expect(transportProviderFunc).toBeCalledTimes(1);
-    expect(delayFunc).toBeCalledTimes(0);
+    expect(stopAutoReconnection).toBeCalledTimes(0);
 
     await rejectWampConnection();
     await waitUntilPass(() => expect(onClose).toBeCalledTimes(1));
 
     expect(transportProviderFunc).toBeCalledTimes(1);
-    await waitUntilPass(() => expect(delayFunc).toBeCalledTimes(1));
+    await waitUntilPass(() => expect(stopAutoReconnection).toBeCalledTimes(1));
 
     expect(wamp.isReconnecting).toBe(false);
     jest.advanceTimersByTime(100);
     expect(wamp.isReconnecting).toBe(false);
 
     expect(transportProviderFunc).toBeCalledTimes(1);
-    expect(delayFunc).toBeCalledTimes(1);
+    expect(stopAutoReconnection).toBeCalledTimes(1);
   });
 
   it(`does not attempt reconnection if ${Swampyer.prototype.close.name}() is called`, async () => {
