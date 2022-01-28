@@ -137,7 +137,7 @@ export interface AutoReconnectionOpenOptions extends OpenOptions {
   /**
    * Control whether or not if the library should attempt an auto reconnection or not. Return
    * `true` to stop any further auto reconnection attempts.
-   * 
+   *
    * If this function is not defined then the library will keep trying to reconnect if
    * connections are lost at any point.
    */
