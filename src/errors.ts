@@ -1,4 +1,10 @@
-export class SwampyerError extends Error {}
+export class SwampyerError {
+  constructor(public readonly message?: string) {}
+
+  toString() {
+    return this.message;
+  }
+}
 
 export class SwampyerOperationError extends SwampyerError {
   constructor(
@@ -8,6 +14,10 @@ export class SwampyerOperationError extends SwampyerError {
     public readonly kwargs?: Object
   ) {
     super(reason);
+  }
+
+  toString() {
+    return `${this.message}\n\n${this.args?.join('\n\n')}`;
   }
 }
 
