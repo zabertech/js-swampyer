@@ -127,7 +127,7 @@ describe(`${Swampyer.prototype.open.name}()`, () => {
     transportProvider.sendToLib(MessageTypes.Challenge, ['ticket', {}]);
 
     expect(onOpen).toBeCalledTimes(0);
-    expect(onChallenge).toBeCalledTimes(1);
+    await waitUntilPass(() => expect(onChallenge).toBeCalledTimes(1));
 
     expect(await transportProvider.transport.read()).toEqual([MessageTypes.Authenticate, 'You dare challenge me?', expect.any(Object)]);
 
@@ -138,6 +138,25 @@ describe(`${Swampyer.prototype.open.name}()`, () => {
     expect(welcomeDetails).toEqual(expectedWelcomeDetails);
     expect(onOpen).toBeCalledTimes(1);
     expect(onOpen).toBeCalledWith(expectedWelcomeDetails);
+  });
+
+  it('is able to accept async onChallenge handlers', async () => {
+    const onChallenge = jest.fn(() => 'You dare challenge me?');
+    const openPromise = wamp.open(transportProvider, {
+      realm,
+      auth: {
+        authId: 'amazing-test-man',
+        authMethods: ['ticket', 'whatever'],
+        onChallenge: async () => onChallenge(),
+      }
+    });
+    await waitUntilPass(() => expect(transportProvider.isOpen).toBe(true));
+
+    await transportProvider.transport.read();
+    transportProvider.sendToLib(MessageTypes.Challenge, ['ticket', {}]);
+
+    await waitUntilPass(() => expect(onChallenge).toBeCalledTimes(1));
+    expect(await transportProvider.transport.read()).toEqual([MessageTypes.Authenticate, 'You dare challenge me?', expect.any(Object)]);
   });
 
   it('allows for custom "agent" to be set for establishing a WAMP connection', async () => {
