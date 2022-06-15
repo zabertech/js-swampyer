@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-floating-promises */
-import { TransportError, AbortError, ConnectionOpenError, SwampyerOperationError, ConnectionClosedError } from './errors';
+import { TransportError, AbortError, ConnectionOpenError, SwampyerOperationError, ConnectionClosedError, SwampyerError } from './errors';
 import { Swampyer } from './swampyer';
 import { Transport, TransportProvider } from './transports/transport';
 import { CloseDetails, CloseReason, MessageData, MessageTypes, OpenOptions } from './types';
@@ -174,9 +174,9 @@ describe(`${Swampyer.prototype.open.name}()`, () => {
     const openPromise = wamp.open(transportProvider, { realm });
     await waitUntilPass(() => expect(transportProvider.isOpen).toBe(true));
     transportProvider.transport.close();
-    await expect(openPromise).rejects.toThrow(TransportError);
+    await expect(openPromise).rejects.toBeInstanceOf(TransportError);
     expect(onClose).toBeCalledTimes(1);
-    expect(onClose).toBeCalledWith<[CloseReason, CloseDetails]>('open_error', { error: expect.any(Error) });
+    expect(onClose).toBeCalledWith<[CloseReason, CloseDetails]>('open_error', { error: expect.any(SwampyerError) });
   });
 
   it('throws an error if the WAMP server sends an ABORT message. The close event is emiited', async () => {
@@ -187,9 +187,9 @@ describe(`${Swampyer.prototype.open.name}()`, () => {
     await waitUntilPass(() => expect(transportProvider.isOpen).toBe(true));
     expect(await transportProvider.transport.read()).toEqual([MessageTypes.Hello, realm, expect.any(Object)]);
     transportProvider.sendToLib(MessageTypes.Abort, ['some.error.happened', 'no reason at all']);
-    await expect(openPromise).rejects.toThrow(AbortError);
+    await expect(openPromise).rejects.toBeInstanceOf(AbortError);
     expect(onClose).toBeCalledTimes(1);
-    expect(onClose).toBeCalledWith<[CloseReason, CloseDetails]>('open_error', { error: expect.any(Error) });
+    expect(onClose).toBeCalledWith<[CloseReason, CloseDetails]>('open_error', { error: expect.any(SwampyerError) });
   });
 
   it('throws an error if the "auth.onChallenge" function has an error. The close event is emiited', async () => {
@@ -209,22 +209,22 @@ describe(`${Swampyer.prototype.open.name}()`, () => {
     transportProvider.sendToLib(MessageTypes.Challenge, ['ticket', {}]);
     expect(await transportProvider.transport.read()).toEqual([MessageTypes.Abort, expect.any(Object), 'wamp.error.cannot_authenticate']);
 
-    await expect(openPromise).rejects.toThrow(AbortError);
+    await expect(openPromise).rejects.toBeInstanceOf(AbortError);
     expect(onClose).toBeCalledTimes(1);
-    expect(onClose).toBeCalledWith<[CloseReason, CloseDetails]>('open_error', { error: expect.any(Error) });
+    expect(onClose).toBeCalledWith<[CloseReason, CloseDetails]>('open_error', { error: expect.any(SwampyerError) });
   });
 
   it('throws an error if we try to call "open()" again while the connection is already open. The transport is not opened', async () => {
     await openWamp();
     const newTransportProvider = new MockTransportProvider();
-    await expect(wamp.open(newTransportProvider, { realm })).rejects.toThrow(ConnectionOpenError);
+    await expect(wamp.open(newTransportProvider, { realm })).rejects.toBeInstanceOf(ConnectionOpenError);
     expect(newTransportProvider.isOpen).toBe(false);
   });
 
   it('throws an error if we call "open()" while a previous call to "open()" is in progress. The transport is not opened', async () => {
     wamp.open(transportProvider, { realm });
     const newTransportProvider = new MockTransportProvider();
-    await expect(wamp.open(newTransportProvider, { realm })).rejects.toThrow(ConnectionOpenError);
+    await expect(wamp.open(newTransportProvider, { realm })).rejects.toBeInstanceOf(ConnectionOpenError);
     expect(newTransportProvider.isOpen).toBe(false);
   });
 
@@ -232,7 +232,7 @@ describe(`${Swampyer.prototype.open.name}()`, () => {
     const openPromise = wamp.open(transportProvider, { realm });
     await waitUntilPass(() => expect(transportProvider.isOpen).toBe(true));
     transportProvider.transport.close();
-    await expect(openPromise).rejects.toThrow(TransportError);
+    await expect(openPromise).rejects.toBeInstanceOf(TransportError);
     expect(transportProvider.transport.isClosed).toBe(true);
   });
 });
@@ -577,7 +577,7 @@ describe(`${Swampyer.prototype.register.name}()`, () => {
     const regRequest = await transportProvider.transport.read();
     transportProvider.sendToLib(MessageTypes.Error, [MessageTypes.Register, regRequest[1] as number, {}, 'something bad', [], {}]);
 
-    await expect(regPromise).rejects.toThrow(SwampyerOperationError);
+    await expect(regPromise).rejects.toBeInstanceOf(SwampyerOperationError);
   });
 
   it('throws an error if a GOODBYE message is received while registering', async () => {
@@ -586,7 +586,7 @@ describe(`${Swampyer.prototype.register.name}()`, () => {
     await transportProvider.transport.read();
     transportProvider.sendToLib(MessageTypes.Goodbye, [{}, 'com.some.reason']);
 
-    await expect(regPromise).rejects.toThrow(ConnectionClosedError);
+    await expect(regPromise).rejects.toBeInstanceOf(ConnectionClosedError);
   });
 
   it('handles errors thrown by registration callbacks and returns the error to the caller', async () => {
@@ -625,7 +625,7 @@ describe(`${Swampyer.prototype.call.name}()`, () => {
     const request = await transportProvider.transport.read();
     expect(request).toEqual([MessageTypes.Call, expect.any(Number), {}, 'com.test.something', args, kwargs]);
     transportProvider.sendToLib(MessageTypes.Error, [MessageTypes.Call, request[1] as number, {}, 'something bad', [], {}]);
-    await expect(promise).rejects.toThrow(SwampyerOperationError);
+    await expect(promise).rejects.toBeInstanceOf(SwampyerOperationError);
   });
 
   it('throws an error if a GOODBYE message is received before the call can be finished', async () => {
@@ -633,7 +633,7 @@ describe(`${Swampyer.prototype.call.name}()`, () => {
     const request = await transportProvider.transport.read();
     expect(request).toEqual([MessageTypes.Call, expect.any(Number), {}, 'com.test.something', args, kwargs]);
     transportProvider.sendToLib(MessageTypes.Goodbye, [{}, 'com.some.reason']);
-    await expect(promise).rejects.toThrow(ConnectionClosedError);
+    await expect(promise).rejects.toBeInstanceOf(ConnectionClosedError);
   });
 });
 
@@ -669,7 +669,7 @@ describe(`${Swampyer.prototype.unregister.name}()`, () => {
     const request = await transportProvider.transport.read();
     expect(request).toEqual([MessageTypes.Unregister, expect.any(Number), regId]);
     transportProvider.sendToLib(MessageTypes.Error, [MessageTypes.Unregister, request[1] as number, {}, 'something bad', [], {}]);
-    await expect(promise).rejects.toThrow(SwampyerOperationError);
+    await expect(promise).rejects.toBeInstanceOf(SwampyerOperationError);
   });
 
   it('throws an error if a GOODBYE event occurs while unregistering', async () => {
@@ -677,7 +677,7 @@ describe(`${Swampyer.prototype.unregister.name}()`, () => {
     const request = await transportProvider.transport.read();
     expect(request).toEqual([MessageTypes.Unregister, expect.any(Number), regId]);
     transportProvider.sendToLib(MessageTypes.Goodbye, [{}, 'com.some.reason']);
-    await expect(promise).rejects.toThrow(ConnectionClosedError);
+    await expect(promise).rejects.toBeInstanceOf(ConnectionClosedError);
   });
 });
 
@@ -727,7 +727,7 @@ describe(`${Swampyer.prototype.subscribe.name}()`, () => {
     const promise = wamp.subscribe('com.some.uri', subHandler);
     const request = await transportProvider.transport.read();
     transportProvider.sendToLib(MessageTypes.Error, [MessageTypes.Subscribe, request[1] as number, {}, 'something bad', [], {}]);
-    await expect(promise).rejects.toThrow(SwampyerOperationError);
+    await expect(promise).rejects.toBeInstanceOf(SwampyerOperationError);
   });
 
   it('throws an error if GOODBYE event occurs before subscribe operation finishes', async () => {
@@ -735,7 +735,7 @@ describe(`${Swampyer.prototype.subscribe.name}()`, () => {
     const promise = wamp.subscribe('com.some.uri', subHandler);
     await transportProvider.transport.read();
     transportProvider.sendToLib(MessageTypes.Goodbye, [{}, 'com.some.reason']);
-    await expect(promise).rejects.toThrow(ConnectionClosedError);
+    await expect(promise).rejects.toBeInstanceOf(ConnectionClosedError);
   });
 
   it('does nothing if subscription handler throws an error', async () => {
@@ -777,14 +777,14 @@ describe(`${Swampyer.prototype.publish.name}()`, () => {
     const promise = wamp.publish('com.some.uri', ['something'], { something: 'else' }, { acknowledge: true });
     const request = await transportProvider.transport.read();
     transportProvider.sendToLib(MessageTypes.Error, [MessageTypes.Publish, request[1] as number, {}, 'something bad', [], {}]);
-    await expect(promise).rejects.toThrow(SwampyerOperationError);
+    await expect(promise).rejects.toBeInstanceOf(SwampyerOperationError);
   });
 
   it('throws an error if a GOODBYE message is received before publish acknowledgement is received', async () => {
     const promise = wamp.publish('com.some.uri', ['something'], { something: 'else' }, { acknowledge: true });
     await transportProvider.transport.read();
     transportProvider.sendToLib(MessageTypes.Goodbye, [{}, 'com.some.reason']);
-    await expect(promise).rejects.toThrow(ConnectionClosedError);
+    await expect(promise).rejects.toBeInstanceOf(ConnectionClosedError);
   });
 });
 
@@ -816,7 +816,7 @@ describe(`${Swampyer.prototype.unsubscribe.name}()`, () => {
     const request = await transportProvider.transport.read();
     expect(request).toEqual([MessageTypes.Unsubscribe, expect.any(Number), subId]);
     transportProvider.sendToLib(MessageTypes.Error, [MessageTypes.Unsubscribe, request[1] as number, {}, 'something bad', [], {}]);
-    await expect(promise).rejects.toThrow(SwampyerOperationError);
+    await expect(promise).rejects.toBeInstanceOf(SwampyerOperationError);
   });
 
   it('throws an error if a GOODBYE message is received before unsubscribe operation finishes', async () => {
@@ -824,7 +824,7 @@ describe(`${Swampyer.prototype.unsubscribe.name}()`, () => {
     const request = await transportProvider.transport.read();
     expect(request).toEqual([MessageTypes.Unsubscribe, expect.any(Number), subId]);
     transportProvider.sendToLib(MessageTypes.Goodbye, [{}, 'com.some.reason']);
-    await expect(promise).rejects.toThrow(ConnectionClosedError);
+    await expect(promise).rejects.toBeInstanceOf(ConnectionClosedError);
   });
 });
 
