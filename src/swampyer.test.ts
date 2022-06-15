@@ -142,7 +142,7 @@ describe(`${Swampyer.prototype.open.name}()`, () => {
 
   it('is able to accept async onChallenge handlers', async () => {
     const onChallenge = jest.fn(() => 'You dare challenge me?');
-    const openPromise = wamp.open(transportProvider, {
+    wamp.open(transportProvider, {
       realm,
       auth: {
         authId: 'amazing-test-man',
