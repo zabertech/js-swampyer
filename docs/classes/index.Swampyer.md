@@ -163,7 +163,7 @@ Open a WAMP connection that will automatically reconnect in case of failure or c
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `getTransportProvider` | (`attempt`: `number`, ...`closeData`: [reason: CloseReason, details: CloseDetails]) => [`TransportProvider`](../interfaces/transports_transport.TransportProvider.md) | A function that should return a fresh TransportProvider for each reconnection attempt.  The `attempt` argument for this callback will be `0` for the initial connection attempt. For all reconnection attempts, the `attempt` value will start from `1`. |
-| `options` | [`OpenOptions`](../interfaces/index.OpenOptions.md) | The options for configuring the WAMP connection |
+| `options` | `AutoReconnectionOpenOptions` | The options for configuring the WAMP connection |
 
 #### Returns
 

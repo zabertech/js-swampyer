@@ -81,7 +81,8 @@ npm i swampyer
     () => new WebsocketJson('ws://localhost:8080/ws')
     {
       realm: 'realm1',
-      autoReconnectionDelay: (attempt) => attempt < 4 ? 1000 : null;
+      autoReconnectionDelay: () => 1000,
+      stopAutoReconnection: (attempt) => attempt >= 4,
     }
   );
 
