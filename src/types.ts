@@ -120,7 +120,7 @@ export interface OpenOptions {
      * Depending on the auth method requested by the server, this could return things like the
      * password of the user we are trying to authenticate as.
      */
-    onChallenge: (authMethod: string) => string;
+    onChallenge: (authMethod: string) => string | Promise<string>;
   };
 }
 

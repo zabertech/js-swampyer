@@ -157,16 +157,16 @@ export class Swampyer {
           const [authMethod] = data as MessageData[MessageTypes.Challenge];
           const errorReason = 'wamp.error.cannot_authenticate';
           if (options.auth?.onChallenge) {
-            try {
-              const authData = options.auth.onChallenge(authMethod);
-              this.transport!._send(MessageTypes.Authenticate, [authData, {}]);
-            } catch (e) {
-              const details = { message: `An exception occured in onChallenge handler: ${String(e)}` };
-              this.transport!._send(MessageTypes.Abort, [details, errorReason]);
-              deferred.reject(new AbortError(errorReason, details));
-            }
+            Promise.resolve()
+              .then(() => options.auth!.onChallenge(authMethod))
+              .then(authData => this.transport!._send(MessageTypes.Authenticate, [authData, {}]))
+              .catch(e => {
+                const details = { message: `An exception occured in onChallenge handler: ${String(e)}` };
+                this.transport!._send(MessageTypes.Abort, [details, errorReason]);
+                deferred.reject(new AbortError(errorReason, details));
+              });
           } else {
-            const details = { message: 'An onChallenge handler is not defined' };
+            const details = { message: 'A onChallenge handler is not defined' };
             this.transport!._send(MessageTypes.Abort, [details, errorReason]);
             deferred.reject(new AbortError(errorReason, details));
           }
