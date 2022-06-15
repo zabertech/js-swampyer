@@ -19,15 +19,11 @@
 ### Properties
 
 - [message](index.TimeoutError.md#message)
-- [name](index.TimeoutError.md#name)
-- [stack](index.TimeoutError.md#stack)
 - [timeout](index.TimeoutError.md#timeout)
-- [prepareStackTrace](index.TimeoutError.md#preparestacktrace)
-- [stackTraceLimit](index.TimeoutError.md#stacktracelimit)
 
 ### Methods
 
-- [captureStackTrace](index.TimeoutError.md#capturestacktrace)
+- [toString](index.TimeoutError.md#tostring)
 
 ## Constructors
 
@@ -49,7 +45,7 @@
 
 ### message
 
-• **message**: `string`
+• `Optional` `Readonly` **message**: `string`
 
 #### Inherited from
 
@@ -57,88 +53,20 @@
 
 ___
 
-### name
-
-• **name**: `string`
-
-#### Inherited from
-
-[SwampyerError](index.SwampyerError.md).[name](index.SwampyerError.md#name)
-
-___
-
-### stack
-
-• `Optional` **stack**: `string`
-
-#### Inherited from
-
-[SwampyerError](index.SwampyerError.md).[stack](index.SwampyerError.md#stack)
-
-___
-
 ### timeout
 
 • `Readonly` **timeout**: `number`
 
-___
-
-### prepareStackTrace
-
-▪ `Static` `Optional` **prepareStackTrace**: (`err`: `Error`, `stackTraces`: `CallSite`[]) => `any`
-
-#### Type declaration
-
-▸ (`err`, `stackTraces`): `any`
-
-Optional override for formatting stack traces
-
-**`see`** https://v8.dev/docs/stack-trace-api#customizing-stack-traces
-
-##### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `err` | `Error` |
-| `stackTraces` | `CallSite`[] |
-
-##### Returns
-
-`any`
-
-#### Inherited from
-
-[SwampyerError](index.SwampyerError.md).[prepareStackTrace](index.SwampyerError.md#preparestacktrace)
-
-___
-
-### stackTraceLimit
-
-▪ `Static` **stackTraceLimit**: `number`
-
-#### Inherited from
-
-[SwampyerError](index.SwampyerError.md).[stackTraceLimit](index.SwampyerError.md#stacktracelimit)
-
 ## Methods
 
-### captureStackTrace
+### toString
 
-▸ `Static` **captureStackTrace**(`targetObject`, `constructorOpt?`): `void`
-
-Create .stack property on a target object
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `targetObject` | `object` |
-| `constructorOpt?` | `Function` |
+▸ **toString**(): `undefined` \| `string`
 
 #### Returns
 
-`void`
+`undefined` \| `string`
 
 #### Inherited from
 
-[SwampyerError](index.SwampyerError.md).[captureStackTrace](index.SwampyerError.md#capturestacktrace)
+[SwampyerError](index.SwampyerError.md).[toString](index.SwampyerError.md#tostring)

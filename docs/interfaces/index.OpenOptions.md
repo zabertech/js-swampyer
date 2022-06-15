@@ -13,10 +13,6 @@
 - [realm](index.OpenOptions.md#realm)
 - [uriBase](index.OpenOptions.md#uribase)
 
-### Methods
-
-- [autoReconnectionDelay](index.OpenOptions.md#autoreconnectiondelay)
-
 ## Properties
 
 ### agent
@@ -43,7 +39,7 @@ If this is not defined then the library will try to authenticate using the `anon
 | :------ | :------ | :------ |
 | `authId` | `string` | The username or ID to authenticate as.  This value depends on the `authMethods` selected and the settings of your WAMP server. |
 | `authMethods` | `string`[] | Could be values like `anonymous`, `ticket`, `cookie`, etc.  Refer to your WAMP server's settings to find out which auth methods are supported. |
-| `onChallenge` | (`authMethod`: `string`) => `string` | - |
+| `onChallenge` | (`authMethod`: `string`) => `string` \| `Promise`<`string`\> | - |
 
 ___
 
@@ -71,28 +67,3 @@ the `withoutUriBase` option for the operations that support that option
 
 **`example`** Setting this to `com.company.something` will allow you to shorten a `call()` to
 `com.company.something.my.fancy_registration` down to a `call()` to `my.fancy_registration`
-
-## Methods
-
-### autoReconnectionDelay
-
-▸ `Optional` **autoReconnectionDelay**(`attempt`, ...`closeData`): ``null`` \| `number`
-
-Define a custom delay between reconnection attempts. If this function returns `null` or
-any number <= 0 then the library will no longer try to reconnect.
-
-If this function is not defined then the library will use a delay that increases with
-each successive reconnection attempt (up to a maximum of 32000ms)
-
-The `attempt` argument for the function will always be `>= 1`.
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `attempt` | `number` |
-| `...closeData` | `CloseEventData` |
-
-#### Returns
-
-``null`` \| `number`
