@@ -231,6 +231,10 @@ export class Swampyer {
 
   /**
    * Register a callback for a WAMP URI
+   * 
+   * **NOTE**: The library will try to forward as much data as possible from the error
+   * thrown by the {@link handler} function to the caller via the `kwargs`. Make sure that the
+   * errors do not contain any sensitive information.
    *
    * @param uri The URI to register for.
    *
@@ -403,7 +407,7 @@ export class Swampyer {
               MessageTypes.Error,
               [
                 MessageTypes.Invocation, requestId, {}, 'error.invoke.failure', [String(e)],
-                JSON.parse(JSON.stringify(e, Object.getOwnPropertyNames(e))),
+                { errorDetails: JSON.parse(JSON.stringify(e, Object.getOwnPropertyNames(e))) },
               ]
             ));
         }
