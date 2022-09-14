@@ -240,7 +240,9 @@ export class Swampyer {
    * @param options Settings for how the registration should be done. This may vary across WAMP servers
    * @returns The registration ID (useful for unregistering)
    */
-  async register(uri: string, handler: RegistrationHandler, options: RegisterOptions = {}): Promise<number> {
+  async register<R = any, A extends any[] = any, K = any>(
+    uri: string, handler: RegistrationHandler<R, A, K>, options: RegisterOptions = {}
+  ): Promise<number> {
     this.throwIfNotOpen();
     const fullUri = options.withoutUriBase ? uri : this.getFullUri(uri);
     const requestId = this.registrationRequestId;
@@ -295,7 +297,9 @@ export class Swampyer {
    * @param options Settings for how the subscription should be done. This may vary across WAMP servers
    * @returns The subscription ID (useful for unsubscribing)
    */
-  async subscribe(uri: string, handler: SubscriptionHandler, options: SubscribeOptions = {}): Promise<number> {
+  async subscribe<A extends any[] = any, K = any>(
+    uri: string, handler: SubscriptionHandler<A, K>, options: SubscribeOptions = {}
+  ): Promise<number> {
     this.throwIfNotOpen();
     const fullUri = options.withoutUriBase ? uri : this.getFullUri(uri);
     const requestId = generateRandomInt();

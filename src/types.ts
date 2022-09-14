@@ -58,9 +58,6 @@ export interface MessageData {
   [MessageTypes.Yield]: [requestId: number, options: Object, args: unknown[], kwargs: Object];
 }
 
-export type SubscriptionHandler = (args: unknown[], kwargs: Object, details: Object) => void;
-export type RegistrationHandler = (args: unknown[], kwargs: Object, details: Object) => void;
-
 export type WelcomeDetails = {
   authid: string;
   authrole: string;
@@ -162,10 +159,8 @@ export interface CommonOptions {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
 }
-
 export type RegisterOptions = CommonOptions;
 export type CallOptions = CommonOptions;
-
 export type SubscribeOptions = CommonOptions;
 export interface PublishOptions extends CommonOptions {
   /**
@@ -174,3 +169,6 @@ export interface PublishOptions extends CommonOptions {
    */
   acknowledge?: boolean;
 }
+
+export type RegistrationHandler<R = any, A extends any[] = any, K = any> = (args: A, kwargs: K, details: Object) => R;
+export type SubscriptionHandler<A = any, K = any> = (args: A, kwargs: K, details: Object) => void;
