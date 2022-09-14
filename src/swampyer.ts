@@ -393,7 +393,7 @@ export class Swampyer {
             [MessageTypes.Invocation, requestId, {}, 'com.error.unavailable', ['No handler available for this request'], {}]
           );
         } else {
-          Promise.resolve(handler(args, kwargs, details))
+          Promise.resolve((async () => handler(args, kwargs, details))())
             .then(result => this.transport!._send(MessageTypes.Yield, [requestId, {}, [result], {}]))
             .catch(e => this.transport!._send(
               MessageTypes.Error,
