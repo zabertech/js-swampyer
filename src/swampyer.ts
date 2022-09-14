@@ -232,6 +232,10 @@ export class Swampyer {
   /**
    * Register a callback for a WAMP URI
    *
+   * **NOTE**: The library will try to forward as much data as possible from the error
+   * thrown by the {@link handler} function to the caller via the `kwargs`. Make sure that the
+   * errors do not contain any sensitive information.
+   *
    * @param uri The URI to register for.
    *
    * If the `uriBase` options was defined when opening the connection then `uriBase` will be
@@ -240,7 +244,10 @@ export class Swampyer {
    * @param options Settings for how the registration should be done. This may vary across WAMP servers
    * @returns The registration ID (useful for unregistering)
    */
-  async register(uri: string, handler: RegistrationHandler, options: RegisterOptions = {}): Promise<number> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async register<R = any, A extends any[] = any, K = any>(
+    uri: string, handler: RegistrationHandler<R, A, K>, options: RegisterOptions = {}
+  ): Promise<number> {
     this.throwIfNotOpen();
     const fullUri = options.withoutUriBase ? uri : this.getFullUri(uri);
     const requestId = this.registrationRequestId;
@@ -295,7 +302,10 @@ export class Swampyer {
    * @param options Settings for how the subscription should be done. This may vary across WAMP servers
    * @returns The subscription ID (useful for unsubscribing)
    */
-  async subscribe(uri: string, handler: SubscriptionHandler, options: SubscribeOptions = {}): Promise<number> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async subscribe<A extends any[] = any, K = any>(
+    uri: string, handler: SubscriptionHandler<A, K>, options: SubscribeOptions = {}
+  ): Promise<number> {
     this.throwIfNotOpen();
     const fullUri = options.withoutUriBase ? uri : this.getFullUri(uri);
     const requestId = generateRandomInt();
@@ -393,12 +403,15 @@ export class Swampyer {
             [MessageTypes.Invocation, requestId, {}, 'com.error.unavailable', ['No handler available for this request'], {}]
           );
         } else {
-          Promise.resolve(handler(args, kwargs, details))
+          Promise.resolve((async () => handler(args, kwargs, details))())
             .then(result => this.transport!._send(MessageTypes.Yield, [requestId, {}, [result], {}]))
             .catch(e => this.transport!._send(
               MessageTypes.Error,
-              [MessageTypes.Invocation, requestId, {}, 'error.invoke.failed', [e], {}])
-            );
+              [
+                MessageTypes.Invocation, requestId, {}, 'error.invoke.failure', [String(e)],
+                { errorDetails: JSON.parse(JSON.stringify(e, Object.getOwnPropertyNames(e))) },
+              ]
+            ));
         }
         break;
       }

@@ -527,25 +527,139 @@ describe(`${Swampyer.prototype.register.name}()`, () => {
     await openWamp();
   });
 
-  it('registers an (async) callback for a URI and responds to call() on that URI', async () => {
-    const regHandler = jest.fn().mockResolvedValue('fancy result');
+  async function testErrorHandling(regHandler: jest.Mock, expectedArgs: unknown[], expectedKwargs: unknown) {
     const regPromise = wamp.register('com.test.something', regHandler);
-
     const regRequest = await transportProvider.transport.read();
-    expect(regRequest).toEqual([MessageTypes.Register, expect.any(Number), expect.any(Object), 'com.test.something']);
     transportProvider.sendToLib(MessageTypes.Registered, [regRequest[1] as number, 1234]);
+    await regPromise;
 
-    const regId = await regPromise;
-    expect(regId).toEqual(1234);
+    transportProvider.sendToLib(MessageTypes.Invocation, [5656, 1234, {}, ['args over here'], {}]);
 
-    const args = [2, 'args'];
-    const kwargs = { one: 'kwarg' };
-    const details = {};
-    transportProvider.sendToLib(MessageTypes.Invocation, [5656, 1234, details, args, kwargs]);
-    await waitUntilPass(() => expect(regHandler).toBeCalledTimes(1));
-    expect(regHandler).toBeCalledWith(args, kwargs, details);
+    expect(await transportProvider.transport.read()).toEqual(
+      [MessageTypes.Error, MessageTypes.Invocation, 5656, {}, expect.any(String), expectedArgs, expectedKwargs]
+    );
+  }
 
-    expect(await transportProvider.transport.read()).toEqual([MessageTypes.Yield, 5656, {}, ['fancy result'], {}]);
+  describe('async handler function', () => {
+    it('registers a callback for a URI and responds to call() on that URI', async () => {
+      const regHandler = jest.fn().mockImplementation(async () => 'fancy result');
+
+      const regPromise = wamp.register('com.test.something', regHandler);
+
+      const regRequest = await transportProvider.transport.read();
+      expect(regRequest).toEqual([MessageTypes.Register, expect.any(Number), expect.any(Object), 'com.test.something']);
+      transportProvider.sendToLib(MessageTypes.Registered, [regRequest[1] as number, 1234]);
+
+      const regId = await regPromise;
+      expect(regId).toEqual(1234);
+
+      const args = [2, 'args'];
+      const kwargs = { one: 'kwarg' };
+      const details = {};
+      transportProvider.sendToLib(MessageTypes.Invocation, [5656, 1234, details, args, kwargs]);
+      await waitUntilPass(() => expect(regHandler).toBeCalledTimes(1));
+      expect(regHandler).toBeCalledWith(args, kwargs, details);
+
+      expect(await transportProvider.transport.read()).toEqual([MessageTypes.Yield, 5656, {}, ['fancy result'], {}]);
+    });
+
+    describe('handles errors thrown by registration callbacks and returns the error to the caller', () => {
+      it('handles thrown Error object', async () => {
+        const errorObj = new Error('Some error');
+        const regHandler = jest.fn().mockImplementation(async () => { throw errorObj });
+        await testErrorHandling(
+          regHandler,
+          [String(errorObj)],
+          {
+            errorDetails: expect.objectContaining({
+              message: errorObj.message,
+              stack: errorObj.stack,
+            }),
+          }
+        );
+      });
+
+      it('handles thrown string', async () => {
+        const errorObj = 'Some error';
+        const regHandler = jest.fn().mockImplementation(async () => { throw errorObj });
+        await testErrorHandling(
+          regHandler,
+          [String(errorObj)],
+          { errorDetails: errorObj }
+        );
+      });
+
+      it('handles arbitrary thrown object', async () => {
+        const errorObj = { a: 1, b: 2 };
+        const regHandler = jest.fn().mockImplementation(async () => { throw errorObj });
+        await testErrorHandling(
+          regHandler,
+          [String(errorObj)],
+          { errorDetails: expect.objectContaining(errorObj) }
+        );
+      });
+    });
+  });
+
+  describe('non-async handler function', () => {
+    it('registers a callback for a URI and responds to call() on that URI', async () => {
+      const regHandler = jest.fn().mockImplementation(() => 'fancy result');
+
+      const regPromise = wamp.register('com.test.something', regHandler);
+
+      const regRequest = await transportProvider.transport.read();
+      expect(regRequest).toEqual([MessageTypes.Register, expect.any(Number), expect.any(Object), 'com.test.something']);
+      transportProvider.sendToLib(MessageTypes.Registered, [regRequest[1] as number, 1234]);
+
+      const regId = await regPromise;
+      expect(regId).toEqual(1234);
+
+      const args = [2, 'args'];
+      const kwargs = { one: 'kwarg' };
+      const details = {};
+      transportProvider.sendToLib(MessageTypes.Invocation, [5656, 1234, details, args, kwargs]);
+      await waitUntilPass(() => expect(regHandler).toBeCalledTimes(1));
+      expect(regHandler).toBeCalledWith(args, kwargs, details);
+
+      expect(await transportProvider.transport.read()).toEqual([MessageTypes.Yield, 5656, {}, ['fancy result'], {}]);
+    });
+
+    describe('handles errors thrown by registration callbacks and returns the error to the caller', () => {
+      it('handles thrown Error object', async () => {
+        const errorObj = new Error('Some error');
+        const regHandler = jest.fn().mockImplementation(() => { throw errorObj });
+        await testErrorHandling(
+          regHandler,
+          [String(errorObj)],
+          {
+            errorDetails: expect.objectContaining({
+              message: errorObj.message,
+              stack: errorObj.stack,
+            }),
+          }
+        );
+      });
+
+      it('handles thrown string', async () => {
+        const errorObj = 'Some error';
+        const regHandler = jest.fn().mockImplementation(() => { throw errorObj });
+        await testErrorHandling(
+          regHandler,
+          [String(errorObj)],
+          { errorDetails: errorObj }
+        );
+      });
+
+      it('handles arbitrary thrown object', async () => {
+        const errorObj = { a: 1, b: 2 };
+        const regHandler = jest.fn().mockImplementation(() => { throw errorObj });
+        await testErrorHandling(
+          regHandler,
+          [String(errorObj)],
+          { errorDetails: expect.objectContaining(errorObj) }
+        );
+      });
+    });
   });
 
   it('multiple reigstrations are kept separate and handled properly when a call() is made for them', async () => {
@@ -587,20 +701,6 @@ describe(`${Swampyer.prototype.register.name}()`, () => {
     transportProvider.sendToLib(MessageTypes.Goodbye, [{}, 'com.some.reason']);
 
     await expect(regPromise).rejects.toBeInstanceOf(ConnectionClosedError);
-  });
-
-  it('handles errors thrown by registration callbacks and returns the error to the caller', async () => {
-    const regHandler = jest.fn().mockRejectedValue('Some error');
-    const regPromise = wamp.register('com.test.something', regHandler);
-    const regRequest = await transportProvider.transport.read();
-    transportProvider.sendToLib(MessageTypes.Registered, [regRequest[1] as number, 1234]);
-    await regPromise;
-
-    transportProvider.sendToLib(MessageTypes.Invocation, [5656, 1234, {}, ['args over here'], {}]);
-
-    expect(await transportProvider.transport.read()).toEqual(
-      [MessageTypes.Error, MessageTypes.Invocation, 5656, {}, expect.any(String), ['Some error'], {}]
-    );
   });
 });
 

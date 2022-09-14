@@ -47,19 +47,16 @@ export interface MessageData {
   [MessageTypes.Subscribed]: [requestId: number, subscriptionId: number];
   [MessageTypes.Unsubscribe]: [requestId: number, subscriptionId: number];
   [MessageTypes.Unsubscribed]: [requestId: number];
-  [MessageTypes.Event]: [subscriptionId: number, publishId: number, details: Object, args: unknown[], kwargs: Object];
+  [MessageTypes.Event]: [subscriptionId: number, publishId: number, details: EventDetails, args: unknown[], kwargs: Object];
   [MessageTypes.Call]: [requestId: number, options: Object, procedure: string, args: unknown[], kwargs: Object];
   [MessageTypes.Result]: [requestId: number, details: Object, resultArray: unknown[], resultObj: Object];
   [MessageTypes.Register]: [requestId: number, details: Object, procedure: string];
   [MessageTypes.Registered]: [requestId: number, registrationId: number];
   [MessageTypes.Unregister]: [requestId: number, registrationId: number];
   [MessageTypes.Unregistered]: [requestId: number];
-  [MessageTypes.Invocation]: [requestId: number, registrationId: number, details: Object, args: unknown[], kwargs: Object];
+  [MessageTypes.Invocation]: [requestId: number, registrationId: number, details: InvocationDetails, args: unknown[], kwargs: Object];
   [MessageTypes.Yield]: [requestId: number, options: Object, args: unknown[], kwargs: Object];
 }
-
-export type SubscriptionHandler = (args: unknown[], kwargs: Object, details: Object) => void;
-export type RegistrationHandler = (args: unknown[], kwargs: Object, details: Object) => void;
 
 export type WelcomeDetails = {
   authid: string;
@@ -68,6 +65,22 @@ export type WelcomeDetails = {
   roles: Record<string, unknown>;
   authprovider?: string;
   realm?: string;
+}
+
+export interface InvocationDetails {
+  /** Internal identifier for the caller that called the URI */
+  caller?: number;
+  caller_authid?: string;
+  caller_authrole?: string;
+  [key: string]: unknown;
+}
+
+export interface EventDetails {
+  /** Internal identifier for the caller that published to the URI */
+  publisher?: number;
+  publisher_authid?: string;
+  publisher_authrole?: string;
+  [key: string]: unknown;
 }
 
 export interface OpenOptions {
@@ -162,10 +175,8 @@ export interface CommonOptions {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
 }
-
 export type RegisterOptions = CommonOptions;
 export type CallOptions = CommonOptions;
-
 export type SubscribeOptions = CommonOptions;
 export interface PublishOptions extends CommonOptions {
   /**
@@ -174,3 +185,8 @@ export interface PublishOptions extends CommonOptions {
    */
   acknowledge?: boolean;
 }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type RegistrationHandler<R = any, A extends any[] = any, K = any> = (args: A, kwargs: K, details: InvocationDetails) => R;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type SubscriptionHandler<A = any, K = any> = (args: A, kwargs: K, details: EventDetails) => void;
