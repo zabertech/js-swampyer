@@ -527,8 +527,21 @@ describe(`${Swampyer.prototype.register.name}()`, () => {
     await openWamp();
   });
 
+  async function testErrorHandling(regHandler: jest.Mock, expectedArgs: unknown[], expectedKwargs: any) {
+    const regPromise = wamp.register('com.test.something', regHandler);
+    const regRequest = await transportProvider.transport.read();
+    transportProvider.sendToLib(MessageTypes.Registered, [regRequest[1] as number, 1234]);
+    await regPromise;
+
+    transportProvider.sendToLib(MessageTypes.Invocation, [5656, 1234, {}, ['args over here'], {}]);
+
+    expect(await transportProvider.transport.read()).toEqual(
+      [MessageTypes.Error, MessageTypes.Invocation, 5656, {}, expect.any(String), expectedArgs, expectedKwargs]
+    );
+  }
+
   describe('async handler function', () => {
-    it('registers an (async) callback for a URI and responds to call() on that URI', async () => {
+    it('registers a callback for a URI and responds to call() on that URI', async () => {
       const regHandler = jest.fn().mockImplementation(async () => 'fancy result');
 
       const regPromise = wamp.register('com.test.something', regHandler);
@@ -550,28 +563,46 @@ describe(`${Swampyer.prototype.register.name}()`, () => {
       expect(await transportProvider.transport.read()).toEqual([MessageTypes.Yield, 5656, {}, ['fancy result'], {}]);
     });
 
-    it('handles errors thrown by registration callbacks and returns the error to the caller', async () => {
-      const errorObj = new Error('Some error');
-      const regHandler = jest.fn().mockImplementation(async () => { throw errorObj });
+    describe('handles errors thrown by registration callbacks and returns the error to the caller', () => {
+      it('handles thrown Error object', async () => {
+        const errorObj = new Error('Some error')
+        const regHandler = jest.fn().mockImplementation(async () => { throw errorObj })
+        await testErrorHandling(
+          regHandler,
+          [String(errorObj)],
+          {
+            errorDetails: expect.objectContaining({
+              message: errorObj.message,
+              stack: errorObj.stack,
+            }),
+          }
+        );
+      });
 
-      const regPromise = wamp.register('com.test.something', regHandler);
-      const regRequest = await transportProvider.transport.read();
-      transportProvider.sendToLib(MessageTypes.Registered, [regRequest[1] as number, 1234]);
-      await regPromise;
+      it('handles thrown string', async () => {
+        const errorObj = 'Some error';
+        const regHandler = jest.fn().mockImplementation(async () => { throw errorObj })
+        await testErrorHandling(
+          regHandler,
+          [String(errorObj)],
+          { errorDetails: errorObj }
+        );
+      });
 
-      transportProvider.sendToLib(MessageTypes.Invocation, [5656, 1234, {}, ['args over here'], {}]);
-
-      expect(await transportProvider.transport.read()).toEqual(
-        [MessageTypes.Error, MessageTypes.Invocation, 5656, {}, expect.any(String), [String(errorObj)], expect.objectContaining({
-          message: errorObj.message,
-          stack: errorObj.stack,
-        })]
-      );
+      it('handles arbitrary thrown object', async () => {
+        const errorObj = { a: 1, b: 2 };
+        const regHandler = jest.fn().mockImplementation(async () => { throw errorObj })
+        await testErrorHandling(
+          regHandler,
+          [String(errorObj)],
+          { errorDetails: expect.objectContaining(errorObj) }
+        );
+      });
     });
   });
 
   describe('non-async handler function', () => {
-    it('registers an (async) callback for a URI and responds to call() on that URI', async () => {
+    it('registers a callback for a URI and responds to call() on that URI', async () => {
       const regHandler = jest.fn().mockImplementation(() => 'fancy result');
 
       const regPromise = wamp.register('com.test.something', regHandler);
@@ -593,23 +624,41 @@ describe(`${Swampyer.prototype.register.name}()`, () => {
       expect(await transportProvider.transport.read()).toEqual([MessageTypes.Yield, 5656, {}, ['fancy result'], {}]);
     });
 
-    it('handles errors thrown by registration callbacks and returns the error to the caller', async () => {
-      const errorObj = new Error('Some error');
-      const regHandler = jest.fn().mockImplementation(() => { throw errorObj });
+    describe('handles errors thrown by registration callbacks and returns the error to the caller', () => {
+      it('handles thrown Error object', async () => {
+        const errorObj = new Error('Some error')
+        const regHandler = jest.fn().mockImplementation(() => { throw errorObj })
+        await testErrorHandling(
+          regHandler,
+          [String(errorObj)],
+          {
+            errorDetails: expect.objectContaining({
+              message: errorObj.message,
+              stack: errorObj.stack,
+            }),
+          }
+        );
+      });
 
-      const regPromise = wamp.register('com.test.something', regHandler);
-      const regRequest = await transportProvider.transport.read();
-      transportProvider.sendToLib(MessageTypes.Registered, [regRequest[1] as number, 1234]);
-      await regPromise;
+      it('handles thrown string', async () => {
+        const errorObj = 'Some error'
+        const regHandler = jest.fn().mockImplementation(() => { throw errorObj })
+        await testErrorHandling(
+          regHandler,
+          [String(errorObj)],
+          { errorDetails: errorObj }
+        );
+      });
 
-      transportProvider.sendToLib(MessageTypes.Invocation, [5656, 1234, {}, ['args over here'], {}]);
-
-      expect(await transportProvider.transport.read()).toEqual(
-        [MessageTypes.Error, MessageTypes.Invocation, 5656, {}, expect.any(String), [String(errorObj)], expect.objectContaining({
-          message: errorObj.message,
-          stack: errorObj.stack,
-        })]
-      );
+      it('handles arbitrary thrown object', async () => {
+        const errorObj = { a: 1, b: 2 };
+        const regHandler = jest.fn().mockImplementation(() => { throw errorObj })
+        await testErrorHandling(
+          regHandler,
+          [String(errorObj)],
+          { errorDetails: expect.objectContaining(errorObj) }
+        );
+      });
     });
   });
 
