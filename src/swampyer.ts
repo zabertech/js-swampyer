@@ -231,7 +231,7 @@ export class Swampyer {
 
   /**
    * Register a callback for a WAMP URI
-   * 
+   *
    * **NOTE**: The library will try to forward as much data as possible from the error
    * thrown by the {@link handler} function to the caller via the `kwargs`. Make sure that the
    * errors do not contain any sensitive information.
@@ -244,6 +244,7 @@ export class Swampyer {
    * @param options Settings for how the registration should be done. This may vary across WAMP servers
    * @returns The registration ID (useful for unregistering)
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async register<R = any, A extends any[] = any, K = any>(
     uri: string, handler: RegistrationHandler<R, A, K>, options: RegisterOptions = {}
   ): Promise<number> {
@@ -301,6 +302,7 @@ export class Swampyer {
    * @param options Settings for how the subscription should be done. This may vary across WAMP servers
    * @returns The subscription ID (useful for unsubscribing)
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async subscribe<A extends any[] = any, K = any>(
     uri: string, handler: SubscriptionHandler<A, K>, options: SubscribeOptions = {}
   ): Promise<number> {

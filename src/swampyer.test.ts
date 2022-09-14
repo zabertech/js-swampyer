@@ -527,7 +527,7 @@ describe(`${Swampyer.prototype.register.name}()`, () => {
     await openWamp();
   });
 
-  async function testErrorHandling(regHandler: jest.Mock, expectedArgs: unknown[], expectedKwargs: any) {
+  async function testErrorHandling(regHandler: jest.Mock, expectedArgs: unknown[], expectedKwargs: unknown) {
     const regPromise = wamp.register('com.test.something', regHandler);
     const regRequest = await transportProvider.transport.read();
     transportProvider.sendToLib(MessageTypes.Registered, [regRequest[1] as number, 1234]);
@@ -565,8 +565,8 @@ describe(`${Swampyer.prototype.register.name}()`, () => {
 
     describe('handles errors thrown by registration callbacks and returns the error to the caller', () => {
       it('handles thrown Error object', async () => {
-        const errorObj = new Error('Some error')
-        const regHandler = jest.fn().mockImplementation(async () => { throw errorObj })
+        const errorObj = new Error('Some error');
+        const regHandler = jest.fn().mockImplementation(async () => { throw errorObj });
         await testErrorHandling(
           regHandler,
           [String(errorObj)],
@@ -581,7 +581,7 @@ describe(`${Swampyer.prototype.register.name}()`, () => {
 
       it('handles thrown string', async () => {
         const errorObj = 'Some error';
-        const regHandler = jest.fn().mockImplementation(async () => { throw errorObj })
+        const regHandler = jest.fn().mockImplementation(async () => { throw errorObj });
         await testErrorHandling(
           regHandler,
           [String(errorObj)],
@@ -591,7 +591,7 @@ describe(`${Swampyer.prototype.register.name}()`, () => {
 
       it('handles arbitrary thrown object', async () => {
         const errorObj = { a: 1, b: 2 };
-        const regHandler = jest.fn().mockImplementation(async () => { throw errorObj })
+        const regHandler = jest.fn().mockImplementation(async () => { throw errorObj });
         await testErrorHandling(
           regHandler,
           [String(errorObj)],
@@ -626,8 +626,8 @@ describe(`${Swampyer.prototype.register.name}()`, () => {
 
     describe('handles errors thrown by registration callbacks and returns the error to the caller', () => {
       it('handles thrown Error object', async () => {
-        const errorObj = new Error('Some error')
-        const regHandler = jest.fn().mockImplementation(() => { throw errorObj })
+        const errorObj = new Error('Some error');
+        const regHandler = jest.fn().mockImplementation(() => { throw errorObj });
         await testErrorHandling(
           regHandler,
           [String(errorObj)],
@@ -641,8 +641,8 @@ describe(`${Swampyer.prototype.register.name}()`, () => {
       });
 
       it('handles thrown string', async () => {
-        const errorObj = 'Some error'
-        const regHandler = jest.fn().mockImplementation(() => { throw errorObj })
+        const errorObj = 'Some error';
+        const regHandler = jest.fn().mockImplementation(() => { throw errorObj });
         await testErrorHandling(
           regHandler,
           [String(errorObj)],
@@ -652,7 +652,7 @@ describe(`${Swampyer.prototype.register.name}()`, () => {
 
       it('handles arbitrary thrown object', async () => {
         const errorObj = { a: 1, b: 2 };
-        const regHandler = jest.fn().mockImplementation(() => { throw errorObj })
+        const regHandler = jest.fn().mockImplementation(() => { throw errorObj });
         await testErrorHandling(
           regHandler,
           [String(errorObj)],

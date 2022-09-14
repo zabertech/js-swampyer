@@ -186,5 +186,7 @@ export interface PublishOptions extends CommonOptions {
   acknowledge?: boolean;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type RegistrationHandler<R = any, A extends any[] = any, K = any> = (args: A, kwargs: K, details: InvocationDetails) => R;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type SubscriptionHandler<A = any, K = any> = (args: A, kwargs: K, details: EventDetails) => void;
