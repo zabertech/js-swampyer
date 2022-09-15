@@ -47,4 +47,5 @@ jobs:
         cache: 'npm'
     - run: npm ci
     - run: npm run gen-docs
+    - run: echo "If this job fails then please run 'npm run gen-docs' and commit the changes"
     - run: git diff-index --quiet HEAD --
