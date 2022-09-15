@@ -55,23 +55,31 @@ ___
 
 ### RegistrationHandler
 
-Ƭ **RegistrationHandler**: (`args`: `unknown`[], `kwargs`: `Object`, `details`: `Object`) => `void`
+Ƭ **RegistrationHandler**<`R`, `A`, `K`\>: (`args`: `A`, `kwargs`: `K`, `details`: `InvocationDetails`) => `R`
+
+#### Type parameters
+
+| Name | Type |
+| :------ | :------ |
+| `R` | `any` |
+| `A` | extends `any`[] = `any` |
+| `K` | `any` |
 
 #### Type declaration
 
-▸ (`args`, `kwargs`, `details`): `void`
+▸ (`args`, `kwargs`, `details`): `R`
 
 ##### Parameters
 
 | Name | Type |
 | :------ | :------ |
-| `args` | `unknown`[] |
-| `kwargs` | `Object` |
-| `details` | `Object` |
+| `args` | `A` |
+| `kwargs` | `K` |
+| `details` | `InvocationDetails` |
 
 ##### Returns
 
-`void`
+`R`
 
 ___
 
@@ -83,7 +91,14 @@ ___
 
 ### SubscriptionHandler
 
-Ƭ **SubscriptionHandler**: (`args`: `unknown`[], `kwargs`: `Object`, `details`: `Object`) => `void`
+Ƭ **SubscriptionHandler**<`A`, `K`\>: (`args`: `A`, `kwargs`: `K`, `details`: `EventDetails`) => `void`
+
+#### Type parameters
+
+| Name | Type |
+| :------ | :------ |
+| `A` | `any` |
+| `K` | `any` |
 
 #### Type declaration
 
@@ -93,9 +108,9 @@ ___
 
 | Name | Type |
 | :------ | :------ |
-| `args` | `unknown`[] |
-| `kwargs` | `Object` |
-| `details` | `Object` |
+| `args` | `A` |
+| `kwargs` | `K` |
+| `details` | `EventDetails` |
 
 ##### Returns
 
