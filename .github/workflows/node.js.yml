@@ -29,3 +29,24 @@ jobs:
     - run: npm run lint
     - run: npm test
     - run: npm run build
+
+  docs-already-updated:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [16.x]
+        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v2
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    - run: npm ci
+    - run: npm run gen-docs
+    - run: echo "If this job fails then please run 'npm run gen-docs' and commit the changes"
+    - run: git status
+    - run: git diff-index --quiet HEAD --

@@ -194,16 +194,28 @@ ___
 
 ### register
 
-▸ **register**(`uri`, `handler`, `options?`): `Promise`<`number`\>
+▸ **register**<`R`, `A`, `K`\>(`uri`, `handler`, `options?`): `Promise`<`number`\>
 
 Register a callback for a WAMP URI
+
+**NOTE**: The library will try to forward as much data as possible from the error
+thrown by the {@link handler} function to the caller via the `kwargs`. Make sure that the
+errors do not contain any sensitive information.
+
+#### Type parameters
+
+| Name | Type |
+| :------ | :------ |
+| `R` | `any` |
+| `A` | extends `any`[] = `any` |
+| `K` | `any` |
 
 #### Parameters
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `uri` | `string` | The URI to register for.  If the `uriBase` options was defined when opening the connection then `uriBase` will be prepended to the provided URI (unless the appropriate value is set in `options`) |
-| `handler` | [`RegistrationHandler`](../modules/index.md#registrationhandler) | The callback function that will handle invocations for this uri |
+| `handler` | [`RegistrationHandler`](../modules/index.md#registrationhandler)<`R`, `A`, `K`\> | The callback function that will handle invocations for this uri |
 | `options` | [`CommonOptions`](../interfaces/index.CommonOptions.md) | Settings for how the registration should be done. This may vary across WAMP servers |
 
 #### Returns
@@ -216,16 +228,23 @@ ___
 
 ### subscribe
 
-▸ **subscribe**(`uri`, `handler`, `options?`): `Promise`<`number`\>
+▸ **subscribe**<`A`, `K`\>(`uri`, `handler`, `options?`): `Promise`<`number`\>
 
 Subscribe to publish events on a given WAMP URI
+
+#### Type parameters
+
+| Name | Type |
+| :------ | :------ |
+| `A` | extends `any`[] = `any` |
+| `K` | `any` |
 
 #### Parameters
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `uri` | `string` | The URI to subscribe to  If the `uriBase` options was defined when opening the connection then `uriBase` will be prepended to the provided URI (unless the appropriate value is set in `options`) |
-| `handler` | [`SubscriptionHandler`](../modules/index.md#subscriptionhandler) | The callback function that will handle subscription events for this uri |
+| `handler` | [`SubscriptionHandler`](../modules/index.md#subscriptionhandler)<`A`, `K`\> | The callback function that will handle subscription events for this uri |
 | `options` | [`CommonOptions`](../interfaces/index.CommonOptions.md) | Settings for how the subscription should be done. This may vary across WAMP servers |
 
 #### Returns
