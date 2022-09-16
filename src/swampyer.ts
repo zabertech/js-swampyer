@@ -26,8 +26,8 @@ export class Swampyer {
   private registrationRequestId = 1;
   private unregistrationRequestId = 1;
 
-  private subscriptionHandlers: { [subscriptionId: number]: SubscriptionHandler } = {};
-  private registrationHandlers: { [registrationId: number]: RegistrationHandler } = {};
+  private subscriptionHandlers: { [subscriptionId: number]: { uri: string; handler: SubscriptionHandler } } = {};
+  private registrationHandlers: { [registrationId: number]: { uri: string; handler: RegistrationHandler } } = {};
 
   private onCloseCleanup: (() => void)[] = [];
 
@@ -253,7 +253,7 @@ export class Swampyer {
     const requestId = this.registrationRequestId;
     this.registrationRequestId += 1;
     const [, registrationId] = await this.sendRequest(MessageTypes.Register, [requestId, options, fullUri], MessageTypes.Registered);
-    this.registrationHandlers[registrationId] = handler;
+    this.registrationHandlers[registrationId] = { uri, handler };
     return registrationId;
   }
 
@@ -310,7 +310,7 @@ export class Swampyer {
     const fullUri = options.withoutUriBase ? uri : this.getFullUri(uri);
     const requestId = generateRandomInt();
     const [, subscriptionId] = await this.sendRequest(MessageTypes.Subscribe, [requestId, options, fullUri], MessageTypes.Subscribed);
-    this.subscriptionHandlers[subscriptionId] = handler;
+    this.subscriptionHandlers[subscriptionId] = { uri, handler };
     return subscriptionId;
   }
 
@@ -389,14 +389,18 @@ export class Swampyer {
     switch (messageType) {
       case MessageTypes.Event: {
         const [subscriptionId, , details, args, kwargs] = data as MessageData[MessageTypes.Event];
+        const { uri, handler } = this.subscriptionHandlers[subscriptionId] || {};
         try {
-          this.subscriptionHandlers[subscriptionId]?.(args, kwargs, details);
-        } catch (e) { /* Do nothing */ }
+          handler?.(args, kwargs, details);
+        } catch (e) {
+          // eslint-disable-next-line no-console
+          console.error(`An unhandled error occurred while running subscription handler for "${uri}"`, e);
+        }
         break;
       }
       case MessageTypes.Invocation: {
         const [requestId, registrationId, details, args, kwargs] = data as MessageData[MessageTypes.Invocation];
-        const handler = this.registrationHandlers[registrationId];
+        const { uri, handler } = this.registrationHandlers[registrationId] || {};
         if (!handler) {
           this.transport!._send(
             MessageTypes.Error,
@@ -405,13 +409,14 @@ export class Swampyer {
         } else {
           Promise.resolve((async () => handler(args, kwargs, details))())
             .then(result => this.transport!._send(MessageTypes.Yield, [requestId, {}, [result], {}]))
-            .catch(e => this.transport!._send(
-              MessageTypes.Error,
-              [
-                MessageTypes.Invocation, requestId, {}, 'error.invoke.failure', [String(e)],
-                { errorDetails: JSON.parse(JSON.stringify(e, Object.getOwnPropertyNames(e))) },
-              ]
-            ));
+            .catch(e => {
+              // eslint-disable-next-line no-console
+              console.error(`An unhandled error occurred while running registration handler for "${uri}"`, e);
+              this.transport!._send(
+                MessageTypes.Error,
+                [MessageTypes.Invocation, requestId, {}, 'error.invoke.failure', [String(e)], { errorDetails: e }]
+              );
+            });
         }
         break;
       }
