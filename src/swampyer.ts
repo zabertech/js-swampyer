@@ -407,11 +407,7 @@ export class Swampyer {
             .then(result => this.transport!._send(MessageTypes.Yield, [requestId, {}, [result], {}]))
             .catch(e => this.transport!._send(
               MessageTypes.Error,
-              [
-                MessageTypes.Invocation, requestId, {}, 'error.invoke.failure',
-                [String(e)],
-                { errorDetails: JSON.parse(JSON.stringify(e)) },
-              ]
+              [MessageTypes.Invocation, requestId, {}, 'error.invoke.failure', [String(e)], { errorDetails: e }]
             ));
         }
         break;
