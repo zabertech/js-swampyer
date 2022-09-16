@@ -17,12 +17,47 @@ class MockTransportProvider implements TransportProvider {
   }
 }
 
+export class MockConsole {
+  /**
+   * The object that contains the mock function for any console method that gets
+   * used from this mock
+   */
+  mock = {} as Record<string, jest.Mock>;
+  /**
+   * Clears the data in the mock functions
+   */
+  reset() {
+    Object.values(this.mock).forEach(mock => mock.mockClear());
+  }
+  /**
+   * The object that can be used as a replacement for `global.console`
+   */
+  console = new Proxy({}, {
+    get: (targetObj, prop) => {
+      const propAsStr = prop as string;
+
+      if (this.mock[propAsStr]) {
+        return this.mock[propAsStr];
+      }
+
+      const mockFunc = jest.fn();
+      this.mock[propAsStr] = mockFunc;
+      return mockFunc;
+    },
+  }) as typeof console;
+}
+
 const realm = 'test-realm';
 
 let transportProvider: MockTransportProvider;
 let wamp: Swampyer;
 
+const mockConsole = new MockConsole();
+const realConsole = console;
+console = mockConsole.console;
+
 beforeEach(() => {
+  mockConsole.reset();
   transportProvider = new MockTransportProvider();
   wamp = new Swampyer();
 });
@@ -538,6 +573,7 @@ describe(`${Swampyer.prototype.register.name}()`, () => {
     expect(await transportProvider.transport.read()).toEqual(
       [MessageTypes.Error, MessageTypes.Invocation, 5656, {}, expect.any(String), expectedArgs, expectedKwargs]
     );
+    expect(mockConsole.mock.error.mock.calls).toEqual([[expect.any(String), expect.anything()]]);
   }
 
   describe('async handler function', () => {
@@ -784,7 +820,7 @@ describe(`${Swampyer.prototype.subscribe.name}()`, () => {
     await expect(promise).rejects.toBeInstanceOf(ConnectionClosedError);
   });
 
-  it('does nothing if subscription handler throws an error', async () => {
+  it('logs an error to console if subscription handler throws an error', async () => {
     const subHandler = jest.fn(() => { throw Error('I never subscribed to this!') });
     const promise = wamp.subscribe('com.some.uri', subHandler);
     const request = await transportProvider.transport.read();
@@ -794,6 +830,9 @@ describe(`${Swampyer.prototype.subscribe.name}()`, () => {
 
     transportProvider.sendToLib(MessageTypes.Event, [1234, 5555, {}, ['args'], {}]);
     expect(subHandler).toBeCalledTimes(1);
+
+    expect(console.error).toBeCalledTimes(1);
+    expect(console.error).toBeCalledWith(expect.any(String), expect.any(Error));
   });
 });
 
