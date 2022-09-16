@@ -26,8 +26,8 @@ export class Swampyer {
   private registrationRequestId = 1;
   private unregistrationRequestId = 1;
 
-  private subscriptionHandlers: { [subscriptionId: number]: SubscriptionHandler } = {};
-  private registrationHandlers: { [registrationId: number]: RegistrationHandler } = {};
+  private subscriptionHandlers: { [subscriptionId: number]: { handler: SubscriptionHandler } } = {};
+  private registrationHandlers: { [registrationId: number]: { handler: RegistrationHandler } } = {};
 
   private onCloseCleanup: (() => void)[] = [];
 
@@ -253,7 +253,7 @@ export class Swampyer {
     const requestId = this.registrationRequestId;
     this.registrationRequestId += 1;
     const [, registrationId] = await this.sendRequest(MessageTypes.Register, [requestId, options, fullUri], MessageTypes.Registered);
-    this.registrationHandlers[registrationId] = handler;
+    this.registrationHandlers[registrationId] = { handler };
     return registrationId;
   }
 
@@ -310,7 +310,7 @@ export class Swampyer {
     const fullUri = options.withoutUriBase ? uri : this.getFullUri(uri);
     const requestId = generateRandomInt();
     const [, subscriptionId] = await this.sendRequest(MessageTypes.Subscribe, [requestId, options, fullUri], MessageTypes.Subscribed);
-    this.subscriptionHandlers[subscriptionId] = handler;
+    this.subscriptionHandlers[subscriptionId] = { handler };
     return subscriptionId;
   }
 
@@ -390,13 +390,13 @@ export class Swampyer {
       case MessageTypes.Event: {
         const [subscriptionId, , details, args, kwargs] = data as MessageData[MessageTypes.Event];
         try {
-          this.subscriptionHandlers[subscriptionId]?.(args, kwargs, details);
+          this.subscriptionHandlers[subscriptionId]?.handler(args, kwargs, details);
         } catch (e) { /* Do nothing */ }
         break;
       }
       case MessageTypes.Invocation: {
         const [requestId, registrationId, details, args, kwargs] = data as MessageData[MessageTypes.Invocation];
-        const handler = this.registrationHandlers[registrationId];
+        const { handler } = this.registrationHandlers[registrationId];
         if (!handler) {
           this.transport!._send(
             MessageTypes.Error,
