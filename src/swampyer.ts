@@ -26,8 +26,8 @@ export class Swampyer {
   private registrationRequestId = 1;
   private unregistrationRequestId = 1;
 
-  private subscriptionHandlers: { [subscriptionId: number]: { uri: string, handler: SubscriptionHandler, options: SubscribeOptions } } = {};
-  private registrationHandlers: { [registrationId: number]: { uri: string, handler: RegistrationHandler, options: RegisterOptions } } = {};
+  private subscriptionHandlers: { [subscriptionId: number]: { uri: string, handler: SubscriptionHandler } } = {};
+  private registrationHandlers: { [registrationId: number]: { uri: string, handler: RegistrationHandler } } = {};
 
   private onCloseCleanup: (() => void)[] = [];
 
@@ -253,7 +253,7 @@ export class Swampyer {
     const requestId = this.registrationRequestId;
     this.registrationRequestId += 1;
     const [, registrationId] = await this.sendRequest(MessageTypes.Register, [requestId, options, fullUri], MessageTypes.Registered);
-    this.registrationHandlers[registrationId] = { uri, handler, options };
+    this.registrationHandlers[registrationId] = { uri, handler };
     return registrationId;
   }
 
@@ -310,7 +310,7 @@ export class Swampyer {
     const fullUri = options.withoutUriBase ? uri : this.getFullUri(uri);
     const requestId = generateRandomInt();
     const [, subscriptionId] = await this.sendRequest(MessageTypes.Subscribe, [requestId, options, fullUri], MessageTypes.Subscribed);
-    this.subscriptionHandlers[subscriptionId] = { uri, handler, options };
+    this.subscriptionHandlers[subscriptionId] = { uri, handler };
     return subscriptionId;
   }
 
