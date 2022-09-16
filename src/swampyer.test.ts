@@ -563,36 +563,14 @@ describe(`${Swampyer.prototype.register.name}()`, () => {
       expect(await transportProvider.transport.read()).toEqual([MessageTypes.Yield, 5656, {}, ['fancy result'], {}]);
     });
 
-    describe('handles errors thrown by registration callbacks and returns the error to the caller', () => {
-      it('handles thrown Error object', async () => {
-        const errorObj = new Error('Some error');
-        const regHandler = jest.fn().mockImplementation(async () => { throw errorObj });
-        await testErrorHandling(
-          regHandler,
-          [String(errorObj)],
-          { errorDetails: {} }
-        );
-      });
-
-      it('handles thrown string', async () => {
-        const errorObj = 'Some error';
-        const regHandler = jest.fn().mockImplementation(async () => { throw errorObj });
-        await testErrorHandling(
-          regHandler,
-          [String(errorObj)],
-          { errorDetails: errorObj }
-        );
-      });
-
-      it('handles arbitrary thrown object', async () => {
-        const errorObj = { a: 1, b: 2, c: { d: 3, e: 4 }, f: [5, 6, { g: 7 }, [8, 9]] };
-        const regHandler = jest.fn().mockImplementation(async () => { throw errorObj });
-        await testErrorHandling(
-          regHandler,
-          [String(errorObj)],
-          { errorDetails: expect.objectContaining(errorObj) }
-        );
-      });
+    it('handles errors thrown by registration callbacks and returns the error to the caller as best as it can', async () => {
+      const errorObj = new Error('Some error');
+      const regHandler = jest.fn().mockImplementation(async () => { throw errorObj });
+      await testErrorHandling(
+        regHandler,
+        [String(errorObj)],
+        { errorDetails: errorObj }
+      );
     });
   });
 
@@ -619,36 +597,14 @@ describe(`${Swampyer.prototype.register.name}()`, () => {
       expect(await transportProvider.transport.read()).toEqual([MessageTypes.Yield, 5656, {}, ['fancy result'], {}]);
     });
 
-    describe('handles errors thrown by registration callbacks and returns the error to the caller', () => {
-      it('handles thrown Error object', async () => {
-        const errorObj = new Error('Some error');
-        const regHandler = jest.fn().mockImplementation(() => { throw errorObj });
-        await testErrorHandling(
-          regHandler,
-          [String(errorObj)],
-          { errorDetails: {} }
-        );
-      });
-
-      it('handles thrown string', async () => {
-        const errorObj = 'Some error';
-        const regHandler = jest.fn().mockImplementation(() => { throw errorObj });
-        await testErrorHandling(
-          regHandler,
-          [String(errorObj)],
-          { errorDetails: errorObj }
-        );
-      });
-
-      it('handles arbitrary thrown object', async () => {
-        const errorObj = { a: 1, b: 2, c: { d: 3, e: 4 }, f: [5, 6, { g: 7 }, [8, 9]] };
-        const regHandler = jest.fn().mockImplementation(() => { throw errorObj });
-        await testErrorHandling(
-          regHandler,
-          [String(errorObj)],
-          { errorDetails: expect.objectContaining(errorObj) }
-        );
-      });
+    it('handles errors thrown by registration callbacks and returns the error to the caller as best as it can', async () => {
+      const errorObj = new Error('Some error');
+      const regHandler = jest.fn().mockImplementation(() => { throw errorObj });
+      await testErrorHandling(
+        regHandler,
+        [String(errorObj)],
+        { errorDetails: errorObj }
+      );
     });
   });
 
