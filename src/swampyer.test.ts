@@ -53,7 +53,7 @@ let transportProvider: MockTransportProvider;
 let wamp: Swampyer;
 
 const mockConsole = new MockConsole();
-const realConsole = console;
+// eslint-disable-next-line no-global-assign
 console = mockConsole.console;
 
 beforeEach(() => {
@@ -831,7 +831,9 @@ describe(`${Swampyer.prototype.subscribe.name}()`, () => {
     transportProvider.sendToLib(MessageTypes.Event, [1234, 5555, {}, ['args'], {}]);
     expect(subHandler).toBeCalledTimes(1);
 
+    // eslint-disable-next-line no-console
     expect(console.error).toBeCalledTimes(1);
+    // eslint-disable-next-line no-console
     expect(console.error).toBeCalledWith(expect.any(String), expect.any(Error));
   });
 });

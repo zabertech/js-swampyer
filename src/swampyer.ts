@@ -26,8 +26,8 @@ export class Swampyer {
   private registrationRequestId = 1;
   private unregistrationRequestId = 1;
 
-  private subscriptionHandlers: { [subscriptionId: number]: { uri: string, handler: SubscriptionHandler } } = {};
-  private registrationHandlers: { [registrationId: number]: { uri: string, handler: RegistrationHandler } } = {};
+  private subscriptionHandlers: { [subscriptionId: number]: { uri: string; handler: SubscriptionHandler } } = {};
+  private registrationHandlers: { [registrationId: number]: { uri: string; handler: RegistrationHandler } } = {};
 
   private onCloseCleanup: (() => void)[] = [];
 
@@ -393,6 +393,7 @@ export class Swampyer {
         try {
           handler?.(args, kwargs, details);
         } catch (e) {
+          // eslint-disable-next-line no-console
           console.error(`An unhandled error occurred while running subscription handler for "${uri}"`, e);
         }
         break;
@@ -409,6 +410,7 @@ export class Swampyer {
           Promise.resolve((async () => handler(args, kwargs, details))())
             .then(result => this.transport!._send(MessageTypes.Yield, [requestId, {}, [result], {}]))
             .catch(e => {
+              // eslint-disable-next-line no-console
               console.error(`An unhandled error occurred while running registration handler for "${uri}"`, e);
               this.transport!._send(
                 MessageTypes.Error,
