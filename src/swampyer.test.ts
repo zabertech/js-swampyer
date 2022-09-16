@@ -570,12 +570,7 @@ describe(`${Swampyer.prototype.register.name}()`, () => {
         await testErrorHandling(
           regHandler,
           [String(errorObj)],
-          {
-            errorDetails: expect.objectContaining({
-              message: errorObj.message,
-              stack: errorObj.stack,
-            }),
-          }
+          { errorDetails: {} }
         );
       });
 
@@ -590,7 +585,7 @@ describe(`${Swampyer.prototype.register.name}()`, () => {
       });
 
       it('handles arbitrary thrown object', async () => {
-        const errorObj = { a: 1, b: 2 };
+        const errorObj = { a: 1, b: 2, c: { d: 3, e: 4 }, f: [5, 6, { g: 7 }, [8, 9]] };
         const regHandler = jest.fn().mockImplementation(async () => { throw errorObj });
         await testErrorHandling(
           regHandler,
@@ -631,12 +626,7 @@ describe(`${Swampyer.prototype.register.name}()`, () => {
         await testErrorHandling(
           regHandler,
           [String(errorObj)],
-          {
-            errorDetails: expect.objectContaining({
-              message: errorObj.message,
-              stack: errorObj.stack,
-            }),
-          }
+          { errorDetails: {} }
         );
       });
 
@@ -651,7 +641,7 @@ describe(`${Swampyer.prototype.register.name}()`, () => {
       });
 
       it('handles arbitrary thrown object', async () => {
-        const errorObj = { a: 1, b: 2 };
+        const errorObj = { a: 1, b: 2, c: { d: 3, e: 4 }, f: [5, 6, { g: 7 }, [8, 9]] };
         const regHandler = jest.fn().mockImplementation(() => { throw errorObj });
         await testErrorHandling(
           regHandler,
