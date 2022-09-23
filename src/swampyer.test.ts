@@ -644,6 +644,28 @@ describe(`${Swampyer.prototype.register.name}()`, () => {
     });
   });
 
+  it('provides reasonable defaults for args, kwargs, and details if they are undefined in the invocation data', async () => {
+    const regHandler = jest.fn().mockImplementation(async () => 'fancy result');
+
+    const regPromise = wamp.register('com.test.something', regHandler);
+
+    const regRequest = await transportProvider.transport.read();
+    expect(regRequest).toEqual([MessageTypes.Register, expect.any(Number), expect.any(Object), 'com.test.something']);
+    transportProvider.sendToLib(MessageTypes.Registered, [regRequest[1] as number, 1234]);
+
+    const regId = await regPromise;
+    expect(regId).toEqual(1234);
+
+    const args = undefined;
+    const kwargs = undefined;
+    const details = undefined;
+    transportProvider.sendToLib(MessageTypes.Invocation, [5656, 1234, details!, args!, kwargs!]);
+    await waitUntilPass(() => expect(regHandler).toBeCalledTimes(1));
+    expect(regHandler).toBeCalledWith([], {}, {});
+
+    expect(await transportProvider.transport.read()).toEqual([MessageTypes.Yield, 5656, {}, ['fancy result'], {}]);
+  });
+
   it('multiple reigstrations are kept separate and handled properly when a call() is made for them', async () => {
     const regHandler1 = jest.fn().mockResolvedValue('fancy result 1');
     const regPromise1 = wamp.register('com.test.something', regHandler1);
@@ -802,6 +824,22 @@ describe(`${Swampyer.prototype.subscribe.name}()`, () => {
 
     expect(subHandler1).toBeCalledWith(['for 1st sub'], {}, {});
     expect(subHandler2).toBeCalledWith(['for 2nd sub'], {}, {});
+  });
+
+  it('provides reasonable defaults for args, kwargs, and details if they are undefined in the event data', async () => {
+    const subHandler = jest.fn();
+    const promise = wamp.subscribe('com.some.uri', subHandler);
+    const request = await transportProvider.transport.read();
+    expect(request).toEqual([MessageTypes.Subscribe, expect.any(Number), expect.any(Object), 'com.some.uri']);
+    transportProvider.sendToLib(MessageTypes.Subscribed, [request[1] as number, 1234]);
+    await promise;
+
+    const args = undefined;
+    const kwargs = undefined;
+    const details = undefined;
+    transportProvider.sendToLib(MessageTypes.Event, [1234, 5555, details!, args!, kwargs!]);
+    expect(subHandler).toBeCalledTimes(1);
+    expect(subHandler).toBeCalledWith([], {}, {});
   });
 
   it('throws an error if subscription fails', async () => {
