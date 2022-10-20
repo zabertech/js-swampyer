@@ -228,9 +228,12 @@ ___
 
 ### subscribe
 
-▸ **subscribe**<`A`, `K`\>(`uri`, `handler`, `options?`): `Promise`<`number`\>
+▸ **subscribe**<`A`, `K`\>(`uri`, `handler`, `options?`): `Promise`<`SubscriptionIdentifier`\>
 
-Subscribe to publish events on a given WAMP URI
+Subscribe to publish events on a given WAMP URI.
+
+If a subscription already exists for a given subscription ID then all subscription handlers will
+get called when an event occurs on the subscription ID.
 
 #### Type parameters
 
@@ -249,7 +252,7 @@ Subscribe to publish events on a given WAMP URI
 
 #### Returns
 
-`Promise`<`number`\>
+`Promise`<`SubscriptionIdentifier`\>
 
 The subscription ID (useful for unsubscribing)
 
@@ -275,15 +278,18 @@ ___
 
 ### unsubscribe
 
-▸ **unsubscribe**(`subscriptionId`): `Promise`<`void`\>
+▸ **unsubscribe**(`subscriptionData`, `unsubscribeAll?`): `Promise`<`void`\>
 
-Unsubscribe from an existing subscription
+Unsubscribe from all existing subscriptions given a subscription ID.
+
+NOTE: This will clear out any other subscriptions with the same subscription ID as well.
 
 #### Parameters
 
-| Name | Type |
-| :------ | :------ |
-| `subscriptionId` | `number` |
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `subscriptionData` | `SubscriptionIdentifier` | The subscription data returned by [subscribe()](index.Swampyer.md#subscribe) |
+| `unsubscribeAll?` | `boolean` | Multiple subscriptions can have the same ID if the same client subscribes to the same URI. Set this to `true` if you would like to unsubscribe all existing subscriptions for this client for the given subscription ID. |
 
 #### Returns
 
