@@ -859,7 +859,9 @@ describe(`${Swampyer.prototype.subscribe.name}()`, () => {
   });
 
   it('logs an error to console if subscription handler throws an error', async () => {
-    const subHandler = jest.fn(() => { throw Error('I never subscribed to this!') });
+    const errorObj = new Error('I never subscribed to this');
+    const subHandler = jest.fn(() => { throw errorObj });
+
     const promise = wamp.subscribe('com.some.uri', subHandler);
     const request = await transportProvider.transport.read();
     expect(request).toEqual([MessageTypes.Subscribe, expect.any(Number), expect.any(Object), 'com.some.uri']);
@@ -870,9 +872,28 @@ describe(`${Swampyer.prototype.subscribe.name}()`, () => {
     expect(subHandler).toBeCalledTimes(1);
 
     // eslint-disable-next-line no-console
-    expect(console.error).toBeCalledTimes(1);
+    await waitUntilPass(() => expect(console.error).toBeCalledTimes(1));
     // eslint-disable-next-line no-console
-    expect(console.error).toBeCalledWith(expect.any(String), expect.any(Error));
+    expect(console.error).toBeCalledWith(expect.any(String), errorObj);
+  });
+
+  it('logs an error to console if an async subscription handler throws an error', async () => {
+    const errorObj = new Error('I never subscribed to this');
+    const subHandler = jest.fn(async () => { throw errorObj });
+
+    const promise = wamp.subscribe('com.some.uri', subHandler);
+    const request = await transportProvider.transport.read();
+    expect(request).toEqual([MessageTypes.Subscribe, expect.any(Number), expect.any(Object), 'com.some.uri']);
+    transportProvider.sendToLib(MessageTypes.Subscribed, [request[1] as number, 1234]);
+    await promise;
+
+    transportProvider.sendToLib(MessageTypes.Event, [1234, 5555, {}, ['args'], {}]);
+    expect(subHandler).toBeCalledTimes(1);
+
+    // eslint-disable-next-line no-console
+    await waitUntilPass(() => expect(console.error).toBeCalledTimes(1));
+    // eslint-disable-next-line no-console
+    expect(console.error).toBeCalledWith(expect.any(String), errorObj);
   });
 });
 
