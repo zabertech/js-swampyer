@@ -28,7 +28,7 @@
     "build": "tsc --project tsconfig.build.json",
     "test": "jest",
     "lint": "eslint --config .eslintrc.js \"src/**/*.{js,ts}\"",
-    "gen-docs": "typedoc --out docs --excludePrivate --disableSources src src/transports/transport.ts src/transports/websocket_json.ts"
+    "gen-docs": "typedoc --out _site --excludePrivate --disableSources src src/transports/transport.ts src/transports/websocket_json.ts"
   },
   "devDependencies": {
     "@types/jest": "^27.0.2",
