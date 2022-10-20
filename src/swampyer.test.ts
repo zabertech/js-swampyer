@@ -796,7 +796,9 @@ describe(`${Swampyer.prototype.subscribe.name}()`, () => {
     const request = await transportProvider.transport.read();
     expect(request).toEqual([MessageTypes.Subscribe, expect.any(Number), expect.any(Object), 'com.some.uri']);
     transportProvider.sendToLib(MessageTypes.Subscribed, [request[1] as number, 1234]);
-    await promise;
+    const data = await promise;
+
+    expect(data).toEqual({ id: 1234, handler: subHandler });
 
     const args = [2, 'args'];
     const kwargs = { one: 'kwarg' };
