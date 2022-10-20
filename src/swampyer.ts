@@ -2,7 +2,8 @@ import { AbortError, ConnectionOpenError, ConnectionClosedError, SwampyerError, 
 import type { Transport, TransportProvider } from './transports/transport';
 import {
   WampMessage, MessageData, MessageTypes, PublishOptions, RegistrationHandler, SubscriptionHandler, WelcomeDetails,
-  OpenOptions, RegisterOptions, CallOptions, SubscribeOptions, CloseReason, CloseDetails, CloseEventData, AutoReconnectionOpenOptions, SubscriptionIdentifier
+  OpenOptions, RegisterOptions, CallOptions, SubscribeOptions, CloseReason, CloseDetails, CloseEventData, AutoReconnectionOpenOptions,
+  SubscriptionIdentifier
 } from './types';
 import { generateRandomInt, deferredPromise, SimpleEventEmitter } from './utils';
 
@@ -293,7 +294,7 @@ export class Swampyer {
 
   /**
    * Subscribe to publish events on a given WAMP URI.
-   * 
+   *
    * If a subscription already exists for a given subscription ID then all subscription handlers will
    * get called when an event occurs on the subscription ID.
    *
@@ -322,7 +323,7 @@ export class Swampyer {
 
   /**
    * Unsubscribe from all existing subscriptions given a subscription ID.
-   * 
+   *
    * NOTE: This will clear out any other subscriptions with the same subscription ID as well.
    *
    * @param subscriptionData The subscription data returned by {@link subscribe subscribe()}
@@ -411,7 +412,7 @@ export class Swampyer {
             .catch(e => {
               // eslint-disable-next-line no-console
               console.error(`An unhandled error occurred while running subscription handler for "${uri}"`, e);
-            })
+            });
         });
         break;
       }

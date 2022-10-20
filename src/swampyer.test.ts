@@ -999,7 +999,7 @@ describe(`${Swampyer.prototype.unsubscribe.name}()`, () => {
 
   describe('multiple subscription for same subscription ID', () => {
     let handler2: jest.Mock;
-    
+
     beforeEach(async () => {
       handler2 = jest.fn();
       const promise = wamp.subscribe('com.some.uri', handler2);
@@ -1047,7 +1047,7 @@ describe(`${Swampyer.prototype.unsubscribe.name}()`, () => {
       expect(handler1).toBeCalledTimes(0);
       expect(handler2).toBeCalledTimes(0);
     });
-  })
+  });
 });
 
 describe('misc event handling', () => {
