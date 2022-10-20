@@ -322,9 +322,7 @@ export class Swampyer {
   }
 
   /**
-   * Unsubscribe from all existing subscriptions given a subscription ID.
-   *
-   * NOTE: This will clear out any other subscriptions with the same subscription ID as well.
+   * Unsubscribe existing subscriptions given a subscription ID and handler function.
    *
    * @param subscriptionData The subscription data returned by {@link subscribe subscribe()}
    * @param unsubscribeAll Multiple subscriptions can have the same ID if the same client subscribes
