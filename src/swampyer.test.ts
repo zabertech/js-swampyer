@@ -796,7 +796,9 @@ describe(`${Swampyer.prototype.subscribe.name}()`, () => {
     const request = await transportProvider.transport.read();
     expect(request).toEqual([MessageTypes.Subscribe, expect.any(Number), expect.any(Object), 'com.some.uri']);
     transportProvider.sendToLib(MessageTypes.Subscribed, [request[1] as number, 1234]);
-    await promise;
+    const data = await promise;
+
+    expect(data).toEqual({ id: 1234, handler: subHandler });
 
     const args = [2, 'args'];
     const kwargs = { one: 'kwarg' };
@@ -806,15 +808,15 @@ describe(`${Swampyer.prototype.subscribe.name}()`, () => {
     expect(subHandler).toBeCalledWith(args, kwargs, details);
   });
 
-  it('multiple subscriptions can co-exist', async () => {
+  it('runs multiple subscription handlers for different subscription IDs', async () => {
     const subHandler1 = jest.fn();
-    const promise1 = wamp.subscribe('com.some.uri', subHandler1);
+    const promise1 = wamp.subscribe('com.some.uri1', subHandler1);
     const request1 = await transportProvider.transport.read();
     transportProvider.sendToLib(MessageTypes.Subscribed, [request1[1] as number, 1234]);
     await promise1;
 
     const subHandler2 = jest.fn();
-    const promise2 = wamp.subscribe('com.some.uri', subHandler2);
+    const promise2 = wamp.subscribe('com.some.uri2', subHandler2);
     const request2 = await transportProvider.transport.read();
     transportProvider.sendToLib(MessageTypes.Subscribed, [request2[1] as number, 9876]);
     await promise2;
@@ -824,6 +826,25 @@ describe(`${Swampyer.prototype.subscribe.name}()`, () => {
 
     expect(subHandler1).toBeCalledWith(['for 1st sub'], {}, {});
     expect(subHandler2).toBeCalledWith(['for 2nd sub'], {}, {});
+  });
+
+  it('runs multiple subscription handlers for same subscription ID', async () => {
+    const subHandler1 = jest.fn();
+    const promise1 = wamp.subscribe('com.some.uri', subHandler1);
+    const request1 = await transportProvider.transport.read();
+    transportProvider.sendToLib(MessageTypes.Subscribed, [request1[1] as number, 1234]);
+    await promise1;
+
+    const subHandler2 = jest.fn();
+    const promise2 = wamp.subscribe('com.some.uri', subHandler2);
+    const request2 = await transportProvider.transport.read();
+    transportProvider.sendToLib(MessageTypes.Subscribed, [request2[1] as number, 1234]);
+    await promise2;
+
+    transportProvider.sendToLib(MessageTypes.Event, [1234, 5555, {}, ['some event'], {}]);
+
+    expect(subHandler1).toBeCalledWith(['some event'], {}, {});
+    expect(subHandler2).toBeCalledWith(['some event'], {}, {});
   });
 
   it('provides reasonable defaults for args, kwargs, and details if they are undefined in the event data', async () => {
@@ -859,7 +880,9 @@ describe(`${Swampyer.prototype.subscribe.name}()`, () => {
   });
 
   it('logs an error to console if subscription handler throws an error', async () => {
-    const subHandler = jest.fn(() => { throw Error('I never subscribed to this!') });
+    const errorObj = new Error('I never subscribed to this');
+    const subHandler = jest.fn(() => { throw errorObj });
+
     const promise = wamp.subscribe('com.some.uri', subHandler);
     const request = await transportProvider.transport.read();
     expect(request).toEqual([MessageTypes.Subscribe, expect.any(Number), expect.any(Object), 'com.some.uri']);
@@ -870,9 +893,28 @@ describe(`${Swampyer.prototype.subscribe.name}()`, () => {
     expect(subHandler).toBeCalledTimes(1);
 
     // eslint-disable-next-line no-console
-    expect(console.error).toBeCalledTimes(1);
+    await waitUntilPass(() => expect(console.error).toBeCalledTimes(1));
     // eslint-disable-next-line no-console
-    expect(console.error).toBeCalledWith(expect.any(String), expect.any(Error));
+    expect(console.error).toBeCalledWith(expect.any(String), errorObj);
+  });
+
+  it('logs an error to console if an async subscription handler throws an error', async () => {
+    const errorObj = new Error('I never subscribed to this');
+    const subHandler = jest.fn(async () => { throw errorObj });
+
+    const promise = wamp.subscribe('com.some.uri', subHandler);
+    const request = await transportProvider.transport.read();
+    expect(request).toEqual([MessageTypes.Subscribe, expect.any(Number), expect.any(Object), 'com.some.uri']);
+    transportProvider.sendToLib(MessageTypes.Subscribed, [request[1] as number, 1234]);
+    await promise;
+
+    transportProvider.sendToLib(MessageTypes.Event, [1234, 5555, {}, ['args'], {}]);
+    expect(subHandler).toBeCalledTimes(1);
+
+    // eslint-disable-next-line no-console
+    await waitUntilPass(() => expect(console.error).toBeCalledTimes(1));
+    // eslint-disable-next-line no-console
+    expect(console.error).toBeCalledWith(expect.any(String), errorObj);
   });
 });
 
@@ -916,28 +958,31 @@ describe(`${Swampyer.prototype.publish.name}()`, () => {
 describe(`${Swampyer.prototype.unsubscribe.name}()`, () => {
   const subId = 1234;
 
-  let handler: jest.Mock;
+  let handler1: jest.Mock;
 
   beforeEach(async () => {
     await openWamp();
 
-    handler = jest.fn();
-    const promise = wamp.subscribe('com.some.uri', handler);
+    handler1 = jest.fn();
+    const promise = wamp.subscribe('com.some.uri', handler1);
     const request = await transportProvider.transport.read();
     transportProvider.sendToLib(MessageTypes.Subscribed, [request[1] as number, subId]);
     await promise;
   });
 
-  it('unsubscribes a subscription and the old subscription callback no longer responds to publish events', async () => {
-    const promise = wamp.unsubscribe(subId);
+  it('unsubscribes a subscription', async () => {
+    const promise = wamp.unsubscribe({ id: subId, handler: handler1 });
     const request = await transportProvider.transport.read();
     expect(request).toEqual([MessageTypes.Unsubscribe, expect.any(Number), subId]);
     transportProvider.sendToLib(MessageTypes.Unsubscribed, [request[1] as number]);
     await promise;
+
+    transportProvider.sendToLib(MessageTypes.Event, [1234, 5555, {}, [97], {}]);
+    expect(handler1).toBeCalledTimes(0);
   });
 
   it('throws an error if the unsubscribe operation fails', async () => {
-    const promise = wamp.unsubscribe(subId);
+    const promise = wamp.unsubscribe({ id: subId, handler: handler1 });
     const request = await transportProvider.transport.read();
     expect(request).toEqual([MessageTypes.Unsubscribe, expect.any(Number), subId]);
     transportProvider.sendToLib(MessageTypes.Error, [MessageTypes.Unsubscribe, request[1] as number, {}, 'something bad', [], {}]);
@@ -945,11 +990,63 @@ describe(`${Swampyer.prototype.unsubscribe.name}()`, () => {
   });
 
   it('throws an error if a GOODBYE message is received before unsubscribe operation finishes', async () => {
-    const promise = wamp.unsubscribe(subId);
+    const promise = wamp.unsubscribe({ id: subId, handler: handler1 });
     const request = await transportProvider.transport.read();
     expect(request).toEqual([MessageTypes.Unsubscribe, expect.any(Number), subId]);
     transportProvider.sendToLib(MessageTypes.Goodbye, [{}, 'com.some.reason']);
     await expect(promise).rejects.toBeInstanceOf(ConnectionClosedError);
+  });
+
+  describe('multiple subscription for same subscription ID', () => {
+    let handler2: jest.Mock;
+
+    beforeEach(async () => {
+      handler2 = jest.fn();
+      const promise = wamp.subscribe('com.some.uri', handler2);
+      const request = await transportProvider.transport.read();
+      transportProvider.sendToLib(MessageTypes.Subscribed, [request[1] as number, subId]);
+      await promise;
+    });
+
+    it('unsubscribes the given handler but leaves the other handlers subscribed', async () => {
+      await wamp.unsubscribe({ id: subId, handler: handler1 });
+
+      transportProvider.sendToLib(MessageTypes.Event, [1234, 5555, {}, [97], {}]);
+      expect(handler1).toBeCalledTimes(0);
+      expect(handler2).toBeCalledTimes(1);
+      expect(handler2).toBeCalledWith([97], {}, {});
+    });
+
+    it('unsubscribes fully once the last handler is unsubscribed', async () => {
+      await wamp.unsubscribe({ id: subId, handler: handler1 });
+
+      transportProvider.sendToLib(MessageTypes.Event, [1234, 5555, {}, [97], {}]);
+      expect(handler1).toBeCalledTimes(0);
+      expect(handler2).toBeCalledTimes(1);
+      expect(handler2).toBeCalledWith([97], {}, {});
+
+      const promise = wamp.unsubscribe({ id: subId, handler: handler2 });
+      const request = await transportProvider.transport.read();
+      expect(request).toEqual([MessageTypes.Unsubscribe, expect.any(Number), subId]);
+      transportProvider.sendToLib(MessageTypes.Unsubscribed, [request[1] as number]);
+      await promise;
+
+      transportProvider.sendToLib(MessageTypes.Event, [1234, 5555, {}, [97], {}]);
+      expect(handler1).toBeCalledTimes(0);
+      expect(handler2).toBeCalledTimes(1);
+    });
+
+    it('unsubscribes fully if the argument is provided', async () => {
+      const promise = wamp.unsubscribe({ id: subId, handler: handler2 }, true);
+      const request = await transportProvider.transport.read();
+      expect(request).toEqual([MessageTypes.Unsubscribe, expect.any(Number), subId]);
+      transportProvider.sendToLib(MessageTypes.Unsubscribed, [request[1] as number]);
+      await promise;
+
+      transportProvider.sendToLib(MessageTypes.Event, [1234, 5555, {}, [97], {}]);
+      expect(handler1).toBeCalledTimes(0);
+      expect(handler2).toBeCalledTimes(0);
+    });
   });
 });
 

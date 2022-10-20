@@ -2,7 +2,8 @@ import { AbortError, ConnectionOpenError, ConnectionClosedError, SwampyerError, 
 import type { Transport, TransportProvider } from './transports/transport';
 import {
   WampMessage, MessageData, MessageTypes, PublishOptions, RegistrationHandler, SubscriptionHandler, WelcomeDetails,
-  OpenOptions, RegisterOptions, CallOptions, SubscribeOptions, CloseReason, CloseDetails, CloseEventData, AutoReconnectionOpenOptions
+  OpenOptions, RegisterOptions, CallOptions, SubscribeOptions, CloseReason, CloseDetails, CloseEventData, AutoReconnectionOpenOptions,
+  SubscriptionIdentifier
 } from './types';
 import { generateRandomInt, deferredPromise, SimpleEventEmitter } from './utils';
 
@@ -26,7 +27,7 @@ export class Swampyer {
   private registrationRequestId = 1;
   private unregistrationRequestId = 1;
 
-  private subscriptionHandlers: { [subscriptionId: number]: { uri: string; handler: SubscriptionHandler } } = {};
+  private subscriptionHandlers: { [subscriptionId: number]: { uri: string; handler: SubscriptionHandler }[] } = {};
   private registrationHandlers: { [registrationId: number]: { uri: string; handler: RegistrationHandler } } = {};
 
   private onCloseCleanup: (() => void)[] = [];
@@ -292,7 +293,10 @@ export class Swampyer {
   }
 
   /**
-   * Subscribe to publish events on a given WAMP URI
+   * Subscribe to publish events on a given WAMP URI.
+   *
+   * If a subscription already exists for a given subscription ID then all subscription handlers will
+   * get called when an event occurs on the subscription ID.
    *
    * @param uri The URI to subscribe to
    *
@@ -305,25 +309,37 @@ export class Swampyer {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async subscribe<A extends any[] = any, K = any>(
     uri: string, handler: SubscriptionHandler<A, K>, options: SubscribeOptions = {}
-  ): Promise<number> {
+  ): Promise<SubscriptionIdentifier> {
     this.throwIfNotOpen();
     const fullUri = options.withoutUriBase ? uri : this.getFullUri(uri);
     const requestId = generateRandomInt();
     const [, subscriptionId] = await this.sendRequest(MessageTypes.Subscribe, [requestId, options, fullUri], MessageTypes.Subscribed);
-    this.subscriptionHandlers[subscriptionId] = { uri, handler };
-    return subscriptionId;
+    this.subscriptionHandlers[subscriptionId] = (this.subscriptionHandlers[subscriptionId] || []).concat({ uri, handler });
+    return {
+      id: subscriptionId,
+      handler
+    };
   }
 
   /**
-   * Unsubscribe from an existing subscription
+   * Unsubscribe existing subscriptions given a subscription ID and handler function.
    *
-   * @param registrationId The subscription ID returned by {@link subscribe subscribe()}
+   * @param subscriptionData The subscription data returned by {@link subscribe subscribe()}
+   * @param unsubscribeAll Multiple subscriptions can have the same ID if the same client subscribes
+   * to the same URI. Set this to `true` if you would like to unsubscribe all existing subscriptions
+   * for this client for the given subscription ID.
    */
-  async unsubscribe(subscriptionId: number): Promise<void> {
+  async unsubscribe(subscriptionData: SubscriptionIdentifier, unsubscribeAll?: boolean): Promise<void> {
     this.throwIfNotOpen();
-    const requestId = generateRandomInt();
-    await this.sendRequest(MessageTypes.Unsubscribe, [requestId, subscriptionId], MessageTypes.Unsubscribed);
-    delete this.subscriptionHandlers[subscriptionId];
+    if (unsubscribeAll || this.subscriptionHandlers[subscriptionData.id]?.length === 1) {
+      const requestId = generateRandomInt();
+      await this.sendRequest(MessageTypes.Unsubscribe, [requestId, subscriptionData.id], MessageTypes.Unsubscribed);
+      delete this.subscriptionHandlers[subscriptionData.id];
+    } else if (this.subscriptionHandlers[subscriptionData.id]) {
+      this.subscriptionHandlers[subscriptionData.id] = this.subscriptionHandlers[subscriptionData.id].filter(
+        ({ handler }) => handler !== subscriptionData.handler
+      );
+    }
   }
 
   /**
@@ -389,13 +405,13 @@ export class Swampyer {
     switch (messageType) {
       case MessageTypes.Event: {
         const [subscriptionId, , details, args, kwargs] = data as MessageData[MessageTypes.Event];
-        const { uri, handler } = this.subscriptionHandlers[subscriptionId] || {};
-        try {
-          handler?.(args ?? [], kwargs ?? {}, details ?? {});
-        } catch (e) {
-          // eslint-disable-next-line no-console
-          console.error(`An unhandled error occurred while running subscription handler for "${uri}"`, e);
-        }
+        (this.subscriptionHandlers[subscriptionId] || []).forEach(({ uri, handler }) => {
+          Promise.resolve((async () => handler(args ?? [], kwargs ?? {}, details ?? {}))())
+            .catch(e => {
+              // eslint-disable-next-line no-console
+              console.error(`An unhandled error occurred while running subscription handler for "${uri}"`, e);
+            });
+        });
         break;
       }
       case MessageTypes.Invocation: {
