@@ -956,20 +956,20 @@ describe(`${Swampyer.prototype.publish.name}()`, () => {
 describe(`${Swampyer.prototype.unsubscribe.name}()`, () => {
   const subId = 1234;
 
-  let handler: jest.Mock;
+  let handler1: jest.Mock;
 
   beforeEach(async () => {
     await openWamp();
 
-    handler = jest.fn();
-    const promise = wamp.subscribe('com.some.uri', handler);
-    const request = await transportProvider.transport.read();
-    transportProvider.sendToLib(MessageTypes.Subscribed, [request[1] as number, subId]);
-    await promise;
+    handler1 = jest.fn();
+    const promise1 = wamp.subscribe('com.some.uri', handler1);
+    const request1 = await transportProvider.transport.read();
+    transportProvider.sendToLib(MessageTypes.Subscribed, [request1[1] as number, subId]);
+    await promise1;
   });
 
   it('unsubscribes a subscription and the old subscription callback no longer responds to publish events', async () => {
-    const promise = wamp.unsubscribe(subId);
+    const promise = wamp.unsubscribe({ id: subId, handler: handler1 });
     const request = await transportProvider.transport.read();
     expect(request).toEqual([MessageTypes.Unsubscribe, expect.any(Number), subId]);
     transportProvider.sendToLib(MessageTypes.Unsubscribed, [request[1] as number]);
@@ -977,7 +977,7 @@ describe(`${Swampyer.prototype.unsubscribe.name}()`, () => {
   });
 
   it('throws an error if the unsubscribe operation fails', async () => {
-    const promise = wamp.unsubscribe(subId);
+    const promise = wamp.unsubscribe({ id: subId, handler: handler1 });
     const request = await transportProvider.transport.read();
     expect(request).toEqual([MessageTypes.Unsubscribe, expect.any(Number), subId]);
     transportProvider.sendToLib(MessageTypes.Error, [MessageTypes.Unsubscribe, request[1] as number, {}, 'something bad', [], {}]);
@@ -985,7 +985,7 @@ describe(`${Swampyer.prototype.unsubscribe.name}()`, () => {
   });
 
   it('throws an error if a GOODBYE message is received before unsubscribe operation finishes', async () => {
-    const promise = wamp.unsubscribe(subId);
+    const promise = wamp.unsubscribe({ id: subId, handler: handler1 });
     const request = await transportProvider.transport.read();
     expect(request).toEqual([MessageTypes.Unsubscribe, expect.any(Number), subId]);
     transportProvider.sendToLib(MessageTypes.Goodbye, [{}, 'com.some.reason']);
