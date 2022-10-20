@@ -26,7 +26,7 @@ export class Swampyer {
   private registrationRequestId = 1;
   private unregistrationRequestId = 1;
 
-  private subscriptionHandlers: { [subscriptionId: number]: { uri: string; handler: SubscriptionHandler } } = {};
+  private subscriptionHandlers: { [subscriptionId: number]: { uri: string; handler: SubscriptionHandler }[] } = {};
   private registrationHandlers: { [registrationId: number]: { uri: string; handler: RegistrationHandler } } = {};
 
   private onCloseCleanup: (() => void)[] = [];
@@ -292,7 +292,10 @@ export class Swampyer {
   }
 
   /**
-   * Subscribe to publish events on a given WAMP URI
+   * Subscribe to publish events on a given WAMP URI.
+   * 
+   * If a subscription already exists for a given subscription ID then all subscription handlers will
+   * get called when an event occurs on the subscription ID.
    *
    * @param uri The URI to subscribe to
    *
@@ -310,7 +313,7 @@ export class Swampyer {
     const fullUri = options.withoutUriBase ? uri : this.getFullUri(uri);
     const requestId = generateRandomInt();
     const [, subscriptionId] = await this.sendRequest(MessageTypes.Subscribe, [requestId, options, fullUri], MessageTypes.Subscribed);
-    this.subscriptionHandlers[subscriptionId] = { uri, handler };
+    this.subscriptionHandlers[subscriptionId] = (this.subscriptionHandlers[subscriptionId] || []).concat({ uri, handler });
     return subscriptionId;
   }
 
@@ -389,13 +392,13 @@ export class Swampyer {
     switch (messageType) {
       case MessageTypes.Event: {
         const [subscriptionId, , details, args, kwargs] = data as MessageData[MessageTypes.Event];
-        const { uri, handler } = this.subscriptionHandlers[subscriptionId] || {};
-        try {
-          handler?.(args ?? [], kwargs ?? {}, details ?? {});
-        } catch (e) {
-          // eslint-disable-next-line no-console
-          console.error(`An unhandled error occurred while running subscription handler for "${uri}"`, e);
-        }
+        (this.subscriptionHandlers[subscriptionId] || []).forEach(({ uri, handler }) => {
+          Promise.resolve((async () => handler(args ?? [], kwargs ?? {}, details ?? {}))())
+            .catch(e => {
+              // eslint-disable-next-line no-console
+              console.error(`An unhandled error occurred while running subscription handler for "${uri}"`, e);
+            })
+        });
         break;
       }
       case MessageTypes.Invocation: {
