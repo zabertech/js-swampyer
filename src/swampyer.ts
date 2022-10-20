@@ -2,7 +2,7 @@ import { AbortError, ConnectionOpenError, ConnectionClosedError, SwampyerError, 
 import type { Transport, TransportProvider } from './transports/transport';
 import {
   WampMessage, MessageData, MessageTypes, PublishOptions, RegistrationHandler, SubscriptionHandler, WelcomeDetails,
-  OpenOptions, RegisterOptions, CallOptions, SubscribeOptions, CloseReason, CloseDetails, CloseEventData, AutoReconnectionOpenOptions
+  OpenOptions, RegisterOptions, CallOptions, SubscribeOptions, CloseReason, CloseDetails, CloseEventData, AutoReconnectionOpenOptions, SubscriptionIdentifier
 } from './types';
 import { generateRandomInt, deferredPromise, SimpleEventEmitter } from './utils';
 
@@ -308,25 +308,39 @@ export class Swampyer {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async subscribe<A extends any[] = any, K = any>(
     uri: string, handler: SubscriptionHandler<A, K>, options: SubscribeOptions = {}
-  ): Promise<number> {
+  ): Promise<SubscriptionIdentifier> {
     this.throwIfNotOpen();
     const fullUri = options.withoutUriBase ? uri : this.getFullUri(uri);
     const requestId = generateRandomInt();
     const [, subscriptionId] = await this.sendRequest(MessageTypes.Subscribe, [requestId, options, fullUri], MessageTypes.Subscribed);
     this.subscriptionHandlers[subscriptionId] = (this.subscriptionHandlers[subscriptionId] || []).concat({ uri, handler });
-    return subscriptionId;
+    return {
+      id: subscriptionId,
+      handler
+    };
   }
 
   /**
-   * Unsubscribe from an existing subscription
+   * Unsubscribe from all existing subscriptions given a subscription ID.
+   * 
+   * NOTE: This will clear out any other subscriptions with the same subscription ID as well.
    *
-   * @param registrationId The subscription ID returned by {@link subscribe subscribe()}
+   * @param subscriptionData The subscription data returned by {@link subscribe subscribe()}
+   * @param unsubscribeAll Multiple subscriptions can have the same ID if the same client subscribes
+   * to the same URI. Set this to `true` if you would like to unsubscribe all existing subscriptions
+   * for this client for the given subscription ID.
    */
-  async unsubscribe(subscriptionId: number): Promise<void> {
+  async unsubscribe(subscriptionData: SubscriptionIdentifier, unsubscribeAll?: boolean): Promise<void> {
     this.throwIfNotOpen();
-    const requestId = generateRandomInt();
-    await this.sendRequest(MessageTypes.Unsubscribe, [requestId, subscriptionId], MessageTypes.Unsubscribed);
-    delete this.subscriptionHandlers[subscriptionId];
+    if (unsubscribeAll || this.subscriptionHandlers[subscriptionData.id]?.length === 1) {
+      const requestId = generateRandomInt();
+      await this.sendRequest(MessageTypes.Unsubscribe, [requestId, subscriptionData.id], MessageTypes.Unsubscribed);
+      delete this.subscriptionHandlers[subscriptionData.id];
+    } else if (this.subscriptionHandlers[subscriptionData.id]) {
+      this.subscriptionHandlers[subscriptionData.id] = this.subscriptionHandlers[subscriptionData.id].filter(
+        ({ handler }) => handler === subscriptionData.handler
+      );
+    }
   }
 
   /**
