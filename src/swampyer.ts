@@ -338,7 +338,7 @@ export class Swampyer {
       delete this.subscriptionHandlers[subscriptionData.id];
     } else if (this.subscriptionHandlers[subscriptionData.id]) {
       this.subscriptionHandlers[subscriptionData.id] = this.subscriptionHandlers[subscriptionData.id].filter(
-        ({ handler }) => handler === subscriptionData.handler
+        ({ handler }) => handler !== subscriptionData.handler
       );
     }
   }
