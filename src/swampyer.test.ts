@@ -806,15 +806,15 @@ describe(`${Swampyer.prototype.subscribe.name}()`, () => {
     expect(subHandler).toBeCalledWith(args, kwargs, details);
   });
 
-  it('multiple subscriptions can co-exist', async () => {
+  it('runs multiple subscription handlers for different subscription IDs', async () => {
     const subHandler1 = jest.fn();
-    const promise1 = wamp.subscribe('com.some.uri', subHandler1);
+    const promise1 = wamp.subscribe('com.some.uri1', subHandler1);
     const request1 = await transportProvider.transport.read();
     transportProvider.sendToLib(MessageTypes.Subscribed, [request1[1] as number, 1234]);
     await promise1;
 
     const subHandler2 = jest.fn();
-    const promise2 = wamp.subscribe('com.some.uri', subHandler2);
+    const promise2 = wamp.subscribe('com.some.uri2', subHandler2);
     const request2 = await transportProvider.transport.read();
     transportProvider.sendToLib(MessageTypes.Subscribed, [request2[1] as number, 9876]);
     await promise2;
@@ -824,6 +824,25 @@ describe(`${Swampyer.prototype.subscribe.name}()`, () => {
 
     expect(subHandler1).toBeCalledWith(['for 1st sub'], {}, {});
     expect(subHandler2).toBeCalledWith(['for 2nd sub'], {}, {});
+  });
+
+  it('runs multiple subscription handlers for same subscription ID', async () => {
+    const subHandler1 = jest.fn();
+    const promise1 = wamp.subscribe('com.some.uri', subHandler1);
+    const request1 = await transportProvider.transport.read();
+    transportProvider.sendToLib(MessageTypes.Subscribed, [request1[1] as number, 1234]);
+    await promise1;
+
+    const subHandler2 = jest.fn();
+    const promise2 = wamp.subscribe('com.some.uri', subHandler2);
+    const request2 = await transportProvider.transport.read();
+    transportProvider.sendToLib(MessageTypes.Subscribed, [request2[1] as number, 1234]);
+    await promise2;
+
+    transportProvider.sendToLib(MessageTypes.Event, [1234, 5555, {}, ['some event'], {}]);
+
+    expect(subHandler1).toBeCalledWith(['some event'], {}, {});
+    expect(subHandler2).toBeCalledWith(['some event'], {}, {});
   });
 
   it('provides reasonable defaults for args, kwargs, and details if they are undefined in the event data', async () => {
