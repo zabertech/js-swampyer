@@ -4,7 +4,7 @@ A lightweight WAMP client that implements the [WAMP v2 basic profile](https://wa
 
 The library is highly promise based. Almost all available operations return a promise. However, it also allows for subscription to various events useful for monitoring the lifecycle of the WAMP connection.
 
-**[API documentation](docs/modules.md)**
+**[API documentation](https://zabertech.github.io/js-swampyer/)**
 
 ## Installation
 
