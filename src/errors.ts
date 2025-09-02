@@ -1,10 +1,4 @@
-export class SwampyerError {
-  constructor(public readonly message?: string) {}
-
-  toString() {
-    return this.message;
-  }
-}
+export class SwampyerError extends Error {}
 
 export class SwampyerOperationError extends SwampyerError {
   constructor(
