@@ -11,16 +11,17 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 16
+          node-version: 22
+          cache: 'npm'
       - run: npm ci
       - run: npm run lint
       - run: npm run test
       - run: npm run build
       - name: Cache build
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         id: restore-build
         with:
           path: ./lib
@@ -30,13 +31,13 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 16
+          node-version: 22
           registry-url: https://registry.npmjs.org/
       - name: Restore build cache
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         id: restore-build
         with:
           path: ./lib
