@@ -12,7 +12,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/zaberTech/js-swampyer"
+    "url": "git+https://github.com/zaberTech/js-swampyer.git"
   },
   "bugs": {
     "url": "https://github.com/zaberTech/js-swampyer/issues"
