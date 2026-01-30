@@ -281,14 +281,14 @@ export class Swampyer {
    * @param args Positional arguments
    * @param kwargs Keyword arguments
    * @param options Settings for how the registration should be done. This may vary between WAMP servers
-   * @returns A tuple containing the raw `args`, `kwargs` and the WAMP call `details`
+   * @returns A tuple containing the raw `args`, `kwargs` and the WAMP call's result `details`
    */
   async callWithResult(
     uri: string,
     args: unknown[] = [],
     kwargs: Object = {},
     options: CallOptions = {}
-  ): Promise<[args: unknown[], kwargs: Object, wampCallResponseDetails: Object]> {
+  ): Promise<[args: unknown[], kwargs: Object, wampCallResultDetails: Object]> {
     this.throwIfNotOpen();
     const fullUri = options.withoutUriBase ? uri : this.getFullUri(uri);
     const requestId = this.callRequestId;
@@ -314,7 +314,7 @@ export class Swampyer {
    * @param args Positional arguments
    * @param kwargs Keyword arguments
    * @param options Settings for how the registration should be done. This may vary between WAMP servers
-   * @returns Arbitrary data returned by the call operation
+   * @returns Arbitrary data defined at the `args[0]` value in the call operation's result
    */
   async call(uri: string, args: unknown[] = [], kwargs: Object = {}, options: CallOptions = {}): Promise<unknown> {
     const [resultArray] = await this.callWithResult(uri, args, kwargs, options);
