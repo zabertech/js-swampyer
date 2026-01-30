@@ -272,7 +272,7 @@ export class Swampyer {
   }
 
   /**
-   * Call a WAMP URI and get its result
+   * Call a WAMP URI and get the full result
    *
    * @param uri The WAMP URI to call
    *
@@ -281,14 +281,43 @@ export class Swampyer {
    * @param args Positional arguments
    * @param kwargs Keyword arguments
    * @param options Settings for how the registration should be done. This may vary between WAMP servers
-   * @returns Arbitrary data returned by the call operation
+   * @returns A tuple containing the raw `args`, `kwargs` and the WAMP call's result `details`
    */
-  async call(uri: string, args: unknown[] = [], kwargs: Object = {}, options: CallOptions = {}): Promise<unknown> {
+  async callWithResult(
+    uri: string,
+    args: unknown[] = [],
+    kwargs: Object = {},
+    options: CallOptions = {}
+  ): Promise<[args: unknown[], kwargs: Object, wampCallResultDetails: Object]> {
     this.throwIfNotOpen();
     const fullUri = options.withoutUriBase ? uri : this.getFullUri(uri);
     const requestId = this.callRequestId;
     this.callRequestId += 1;
-    const [, , resultArray] = await this.sendRequest(MessageTypes.Call, [requestId, options, fullUri, args, kwargs], MessageTypes.Result);
+    const [, details, resultArgs, resultKwargs] = await this.sendRequest(
+      MessageTypes.Call,
+      [requestId, options, fullUri, args, kwargs],
+      MessageTypes.Result
+    );
+    return [resultArgs, resultKwargs, details];
+  }
+
+  /**
+   * Call a WAMP URI and get the `args[0]` value from the result directly. This is convenient
+   * if the WAMP URI only ever returns useful data via the first positional argument.
+   *
+   * If you need access to the full result then use {@link callWithResult callWithResult()} instead.
+   *
+   * @param uri The WAMP URI to call
+   *
+   * If the `uriBase` options was defined when opening the connection then `uriBase` will be
+   * prepended to the provided URI (unless the appropriate value is set in `options`)
+   * @param args Positional arguments
+   * @param kwargs Keyword arguments
+   * @param options Settings for how the registration should be done. This may vary between WAMP servers
+   * @returns Arbitrary data defined at the `args[0]` value in the call operation's result
+   */
+  async call(uri: string, args: unknown[] = [], kwargs: Object = {}, options: CallOptions = {}): Promise<unknown> {
+    const [resultArray] = await this.callWithResult(uri, args, kwargs, options);
     return resultArray[0];
   }
 
