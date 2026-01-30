@@ -272,7 +272,7 @@ export class Swampyer {
   }
 
   /**
-   * Call a WAMP URI and returns the full result
+   * Call a WAMP URI and get the full result
    *
    * @param uri The WAMP URI to call
    *
@@ -302,7 +302,10 @@ export class Swampyer {
   }
 
   /**
-   * Call a WAMP URI and get its result
+   * Call a WAMP URI and get the `args[0]` value from the result directly. This is convenient
+   * if the WAMP URI only ever returns useful data via the first positional argument.
+   * 
+   * If you need access to the full result then use {@link callWithResult callWithResult()} instead.
    *
    * @param uri The WAMP URI to call
    *
