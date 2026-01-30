@@ -745,6 +745,8 @@ describe(`${Swampyer.prototype.callWithResult.name}()`, () => {
   const args = ['my_args'];
   const kwargs = { my: 'kwargs' };
 
+  const resultDetails = { someWampInfo: 'info' };
+
   beforeEach(async () => {
     await openWamp();
   });
@@ -753,8 +755,8 @@ describe(`${Swampyer.prototype.callWithResult.name}()`, () => {
     const promise = wamp.callWithResult('com.test.something', args, kwargs);
     const request = await transportProvider.transport.read();
     expect(request).toEqual([MessageTypes.Call, expect.any(Number), {}, 'com.test.something', args, kwargs]);
-    transportProvider.sendToLib(MessageTypes.Result, [request[1] as number, { someWampInfo: 'info' }, ['something'], { something: 'else' }]);
-    expect(await promise).toEqual([['something'], { something: 'else' }, { someWampInfo: 'info' }]);
+    transportProvider.sendToLib(MessageTypes.Result, [request[1] as number, resultDetails, ['something'], { something: 'else' }]);
+    expect(await promise).toEqual([['something'], { something: 'else' }, resultDetails]);
   });
 
   it('throws an error if the call request fails', async () => {
