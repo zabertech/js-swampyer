@@ -272,6 +272,36 @@ export class Swampyer {
   }
 
   /**
+   * Call a WAMP URI and returns the full result
+   *
+   * @param uri The WAMP URI to call
+   *
+   * If the `uriBase` options was defined when opening the connection then `uriBase` will be
+   * prepended to the provided URI (unless the appropriate value is set in `options`)
+   * @param args Positional arguments
+   * @param kwargs Keyword arguments
+   * @param options Settings for how the registration should be done. This may vary between WAMP servers
+   * @returns A tuple containing the raw `args`, `kwargs` and the WAMP call `details`
+   */
+  async callWithResult(
+    uri: string,
+    args: unknown[] = [],
+    kwargs: Object = {},
+    options: CallOptions = {}
+  ): Promise<[args: unknown[], kwargs: Object, wampCallResponseDetails: Object]> {
+    this.throwIfNotOpen();
+    const fullUri = options.withoutUriBase ? uri : this.getFullUri(uri);
+    const requestId = this.callRequestId;
+    this.callRequestId += 1;
+    const [, details, resultArgs, resultKwargs] = await this.sendRequest(
+      MessageTypes.Call,
+      [requestId, options, fullUri, args, kwargs],
+      MessageTypes.Result
+    );
+    return [resultArgs, resultKwargs, details];
+  }
+
+  /**
    * Call a WAMP URI and get its result
    *
    * @param uri The WAMP URI to call
@@ -284,11 +314,7 @@ export class Swampyer {
    * @returns Arbitrary data returned by the call operation
    */
   async call(uri: string, args: unknown[] = [], kwargs: Object = {}, options: CallOptions = {}): Promise<unknown> {
-    this.throwIfNotOpen();
-    const fullUri = options.withoutUriBase ? uri : this.getFullUri(uri);
-    const requestId = this.callRequestId;
-    this.callRequestId += 1;
-    const [, , resultArray] = await this.sendRequest(MessageTypes.Call, [requestId, options, fullUri, args, kwargs], MessageTypes.Result);
+    const [resultArray] = await this.callWithResult(uri, args, kwargs, options);
     return resultArray[0];
   }
 
