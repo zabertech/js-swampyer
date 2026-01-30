@@ -741,6 +741,39 @@ describe(`${Swampyer.prototype.call.name}()`, () => {
   });
 });
 
+describe(`${Swampyer.prototype.callWithResult.name}()`, () => {
+  const args = ['my_args'];
+  const kwargs = { my: 'kwargs' };
+
+  beforeEach(async () => {
+    await openWamp();
+  });
+
+  it('sends a call request and receives the result', async () => {
+    const promise = wamp.callWithResult('com.test.something', args, kwargs);
+    const request = await transportProvider.transport.read();
+    expect(request).toEqual([MessageTypes.Call, expect.any(Number), {}, 'com.test.something', args, kwargs]);
+    transportProvider.sendToLib(MessageTypes.Result, [request[1] as number, { someWampInfo: 'info' }, ['something'], { something: 'else' }]);
+    expect(await promise).toEqual([['something'], { something: 'else' }, { someWampInfo: 'info' }]);
+  });
+
+  it('throws an error if the call request fails', async () => {
+    const promise = wamp.callWithResult('com.test.something', args, kwargs);
+    const request = await transportProvider.transport.read();
+    expect(request).toEqual([MessageTypes.Call, expect.any(Number), {}, 'com.test.something', args, kwargs]);
+    transportProvider.sendToLib(MessageTypes.Error, [MessageTypes.Call, request[1] as number, {}, 'something bad', [], {}]);
+    await expect(promise).rejects.toBeInstanceOf(SwampyerOperationError);
+  });
+
+  it('throws an error if a GOODBYE message is received before the call can be finished', async () => {
+    const promise = wamp.callWithResult('com.test.something', args, kwargs);
+    const request = await transportProvider.transport.read();
+    expect(request).toEqual([MessageTypes.Call, expect.any(Number), {}, 'com.test.something', args, kwargs]);
+    transportProvider.sendToLib(MessageTypes.Goodbye, [{}, 'com.some.reason']);
+    await expect(promise).rejects.toBeInstanceOf(ConnectionClosedError);
+  });
+});
+
 describe(`${Swampyer.prototype.unregister.name}()`, () => {
   const regId = 1234;
 
