@@ -30,6 +30,10 @@ jobs:
   publish-npm:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      # Required for publishing to npm using "Trusted Publisher" OIDC authentication
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -42,6 +46,4 @@ jobs:
         with:
           path: ./lib
           key: ${{ github.sha }}
-      - run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{secrets.npm_token}}
+      - run: npm publish --provenance
